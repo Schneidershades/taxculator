@@ -19,6 +19,7 @@ class CreateCountriesTable extends Migration
             $table->string('code')->nullable();
             $table->string('short_name')->nullable();
             $table->string('currency')->nullable();
+            $table->string('tax_mode')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('countries');
             $table->timestamps();
         });
