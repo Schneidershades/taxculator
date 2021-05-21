@@ -15,21 +15,18 @@ class TaxDeductionAttributesSeeder extends Seeder
     public function run()
     {
         $class = TaxDeductionAttribute::create([
-        	'name' => 'pension',
-        	'deduction_type' => 'percentage',
-            'value' => 8,
+        	'name' => 'Pension',
+            'short_name' => 'pension',
         ]);
 
         $class = TaxDeductionAttribute::create([
-            'name' => 'nhf',
-            'deduction_type' => 'percentage',
-            'value' => 2.5,
+            'name' => 'National Housing Fund',
+            'short_name' => 'NHF',
         ]);
 
         $class = TaxDeductionAttribute::create([
-            'name' => 'life_insurance',
-            'deduction_type' => 'amount',
-            'value' => 5000,
+            'name' => 'Life Insurance',
+            'short_name' => 'life_insurance',
         ]);
     }
 }
