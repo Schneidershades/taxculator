@@ -1,0 +1,52 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Taxculate App OpenApi API Documentation",
+        "description": "Taxculate App Using L5 Swagger OpenApi description",
+        "contact": {
+            "email": "hdp@gmail.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "paths": {
+        "/api/v1/location/countries": {
+            "get": {
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get all countries",
+                "description": "Get all countries",
+                "operationId": "all_countries",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {}
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Taxculate Application",
+            "description": "API Endpoints of Project"
+        }
+    ],
+    "security": [
+        []
+    ]
+}
