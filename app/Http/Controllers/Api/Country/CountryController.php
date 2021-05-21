@@ -10,7 +10,7 @@ class CountryController extends Controller
 {
 	/**
     * @OA\Get(
-    *      path="/api/v1/location/countries",
+    *      path="/api/v1countries",
     *      operationId="all_countries",
     *      tags={"location"},
     *      summary="Get all countries",
