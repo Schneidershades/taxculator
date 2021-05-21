@@ -16,6 +16,9 @@ class CountriesSeeder extends Seeder
     {
         $class = Country::create([
         	'name' => 'Nigeria',
+            'code' => 'NG',
+            'short_name' => 'NG',
+            'currency' => 'N',
         ]);
     }
 }
