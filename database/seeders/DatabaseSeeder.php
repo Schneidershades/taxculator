@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(TaxClassSeeder::class);
         $this->call(TaxDeductionClassSeeder::class);
+        $this->call(TaxReliefClassSeeder::class);
         $this->call(CountriesSeeder::class);
         $this->call(CountryTaxClassSeeder::class);
         $this->call(CountryTaxDeductionClassSeeder::class);
