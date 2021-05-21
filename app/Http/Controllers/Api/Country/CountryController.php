@@ -10,7 +10,7 @@ class CountryController extends Controller
 {
 	/**
     * @OA\Get(
-    *      path="/api/v1countries",
+    *      path="/api/v1/countries",
     *      operationId="all_countries",
     *      tags={"location"},
     *      summary="Get all countries",
@@ -27,7 +27,7 @@ class CountryController extends Controller
 
     public function index ()
     {
-    	return Country::all();
+    	return $this->showAll(Country::all());
     }
 
     public function show ($id)

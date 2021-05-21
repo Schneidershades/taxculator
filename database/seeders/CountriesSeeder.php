@@ -18,7 +18,8 @@ class CountriesSeeder extends Seeder
         	'name' => 'Nigeria',
             'code' => 'NG',
             'short_name' => 'NG',
-            'currency' => 'N',
+            'currency' => '₦',
+            'currency_code' => '₦',
         ]);
     }
 }

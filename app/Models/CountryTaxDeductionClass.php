@@ -16,7 +16,7 @@ class CountryTaxDeductionClass extends Model
     	return $this->belongsTo(Country::class);
     }
 
-    public function taxClass()
+    public function taxDeductionClass()
     {
     	return $this->belongsTo(TaxDeductionClass::class);
     }

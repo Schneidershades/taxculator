@@ -16,7 +16,7 @@ class CountryTaxReliefClass extends Model
     	return $this->belongsTo(Country::class);
     }
 
-    public function taxClass()
+    public function taxReliefClass()
     {
     	return $this->belongsTo(TaxReliefClass::class);
     }

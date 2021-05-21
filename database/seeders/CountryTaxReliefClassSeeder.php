@@ -17,9 +17,9 @@ class CountryTaxReliefClassSeeder extends Seeder
         $class = CountryTaxReliefClass::create([
         	'country_id' => 1,
         	'tax_relief_class_id' => 1,
-        	'deduction_type' => 'percentage',
+        	'relief_type' => 'percentage',
             'value' => 20,
-            'minimum_amount' => 200000,
+            'minimum_amount' => 20000000,
         ]);
     }
 }
