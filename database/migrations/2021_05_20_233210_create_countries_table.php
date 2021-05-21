@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTaxAttributesTable extends Migration
+class CreateCountriesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,10 @@ class CreateTaxAttributesTable extends Migration
      */
     public function up()
     {
-        Schema::create('tax_attributes', function (Blueprint $table) {
+        Schema::create('countries', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->foreignId('parent_id')->nullable()->constrained('countries');
             $table->timestamps();
         });
     }
@@ -27,6 +28,6 @@ class CreateTaxAttributesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tax_attributes');
+        Schema::dropIfExists('countries');
     }
 }

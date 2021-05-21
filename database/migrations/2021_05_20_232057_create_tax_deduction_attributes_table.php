@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTaxAttributesTable extends Migration
+class CreateTaxDeductionAttributesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class CreateTaxAttributesTable extends Migration
      */
     public function up()
     {
-        Schema::create('tax_attributes', function (Blueprint $table) {
+        Schema::create('tax_deduction_attributes', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->timestamps();
@@ -27,6 +27,6 @@ class CreateTaxAttributesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tax_attributes');
+        Schema::dropIfExists('tax_deduction_attributes');
     }
 }

@@ -14,5 +14,9 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call(TaxAttributesSeeder::class);
+        $this->call(TaxDeductionAttributesSeeder::class);
+        $this->call(CountrySeeder::class);
+        $this->call(CountryTaxAttributesSeeder::class);
+        $this->call(CountryTaxDeductionAttributesSeeder::class);
     }
 }

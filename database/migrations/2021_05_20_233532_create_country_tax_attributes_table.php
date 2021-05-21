@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTaxAttributesTable extends Migration
+class CreateCountryTaxAttributesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,11 @@ class CreateTaxAttributesTable extends Migration
      */
     public function up()
     {
-        Schema::create('tax_attributes', function (Blueprint $table) {
+        Schema::create('country_tax_attributes', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->foreignId('country_id')->nullable()->constrained();
+            $table->foreignId('country_tax_attribute_id')->nullable()->constrained();
+            $table->boolean('require_deduction')->default(false);
             $table->timestamps();
         });
     }
@@ -27,6 +29,6 @@ class CreateTaxAttributesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tax_attributes');
+        Schema::dropIfExists('country_tax_attributes');
     }
 }
