@@ -24,8 +24,8 @@ class CountryResource extends JsonResource
             'abbr' => $this->short_name,
             'currency' => $this->currency,
             'taxClasses' => CountryTaxClassResource::collection($this->countryTaxClasses),
-            'taxDeductions' => CountryTaxDeductionClassResource::collection($this->countryTaxDeductionClasses),
             'taxReliefs' => CountryTaxReliefClassResource::collection($this->countryTaxReliefClasses),
+            'taxDeductions' => CountryTaxDeductionClassResource::collection($this->countryTaxDeductionClasses),
         ];
     }
 }
