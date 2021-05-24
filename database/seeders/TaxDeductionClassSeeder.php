@@ -17,16 +17,19 @@ class TaxDeductionClassSeeder extends Seeder
         $class = TaxDeductionClass::create([
         	'name' => 'Pension',
             'short_name' => 'pension',
+            'unit' => 1,
         ]);
 
         $class = TaxDeductionClass::create([
             'name' => 'National Housing Fund',
             'short_name' => 'NHF',
+            'unit' => 1,
         ]);
 
         $class = TaxDeductionClass::create([
             'name' => 'Life Insurance',
             'short_name' => 'life_insurance',
+            'unit' => 1,
         ]);
     }
 }
