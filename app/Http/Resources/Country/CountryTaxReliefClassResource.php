@@ -18,6 +18,8 @@ class CountryTaxReliefClassResource extends JsonResource
         return [
             'id' => $this->id,
             'taxRelief' => $this->taxReliefClass->name,
+            'type' => $this->taxReliefClass->type,
+            'description' => $this->taxReliefClass->description,
             'relief_applied_by' => $this->relief_type,
             'value' => $this->value,
             'minimum_amount' => $this->minimum_amount,

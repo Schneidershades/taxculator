@@ -30,7 +30,7 @@ class TaxReliefClassSeeder extends Seeder
 
         $class = TaxReliefClass::create([
             'name' => 'Consolidated Relief Allowance',
-            'description' => 'Consolidated Relief Allowance for variable percentage',
+            'description' => 'Consolidated Relief Allowance for Gross Income variable percentage',
             'code' => 'CRA-3',
             'type' => 'variable',
         ]);
