@@ -4,7 +4,7 @@ namespace App\Http\Resources\Country;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class CountryApplyClassToDeductionResource extends JsonResource
+class CountryClassDeductionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,7 +15,7 @@ class CountryApplyClassToDeductionResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'class' => $this->class,
+            'class' => $this->country_tax_class_id,
         ];
     }
 }

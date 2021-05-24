@@ -4,7 +4,7 @@ namespace App\Http\Resources\Country;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Tax\TaxDeductionClassResource;
-use App\Http\Resources\Country\CountryApplyClassToDeductionResource;
+use App\Http\Resources\Country\CountryClassDeductionResource;
 
 class CountryTaxDeductionClassResource extends JsonResource
 {
@@ -21,7 +21,7 @@ class CountryTaxDeductionClassResource extends JsonResource
             'taxDeduction' => $this->taxDeductionClass->name,
             'deduction_applied_by' => $this->deduction_type,
             'value' => $this->value,
-            'class' => CountryApplyClassToDeductionResource::collection($this->taxClasses)
+            'class' => CountryClassDeductionResource::collection($this->countryTaxClasses)
         ];
     }
 }

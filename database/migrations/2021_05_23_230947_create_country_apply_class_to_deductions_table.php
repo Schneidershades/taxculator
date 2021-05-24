@@ -13,10 +13,10 @@ class CreateCountryApplyClassToDeductionsTable extends Migration
      */
     public function up()
     {
-        Schema::create('country_apply_class_to_deductions', function (Blueprint $table) {
+        Schema::create('country_class_deductions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tax_deduction_class_id')->nullable()->constrained();
-            $table->foreignId('tax_class_id')->nullable()->constrained();
+            $table->foreignId('country_tax_deduction_class_id')->nullable()->constrained();
+            $table->foreignId('country_tax_class_id')->nullable()->constrained();
             $table->timestamps();
         });
     }

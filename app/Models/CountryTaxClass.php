@@ -21,9 +21,4 @@ class CountryTaxClass extends Model
     {
     	return $this->belongsTo(TaxClass::class);
     }
-
-    public function taxDeductionClasses()
-    {
-    	return $this->belongsToMany(TaxDeductionClass::class);
-    }
 }
