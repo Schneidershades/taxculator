@@ -18,7 +18,7 @@ class CreateCountryTaxDeductionClassesTable extends Migration
             $table->foreignId('country_id')->nullable()->constrained();
             $table->foreignId('tax_deduction_class_id')->nullable()->constrained();
             $table->string('deduction_type');
-            $table->integer('value');
+            $table->double('value',13,2)->default(0);
             $table->timestamps();
         });
     }

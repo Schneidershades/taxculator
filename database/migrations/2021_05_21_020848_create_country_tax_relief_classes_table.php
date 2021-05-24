@@ -19,7 +19,7 @@ class CreateCountryTaxReliefClassesTable extends Migration
             $table->foreignId('tax_relief_class_id')->nullable()->constrained();
             $table->string('relief_type');
             $table->integer('value');
-            $table->integer('minimum_amount');
+            $table->double('minimum_amount',13,2)->default(0);
             $table->timestamps();
         });
     }

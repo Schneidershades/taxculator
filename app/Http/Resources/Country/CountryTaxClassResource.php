@@ -18,7 +18,6 @@ class CountryTaxClassResource extends JsonResource
         return [
             'id' => $this->id,
             'taxClass' => $this->taxClass->name,
-            'require_deduction' => $this->require_deduction ? true : false,
         ];
     }
 }

@@ -15,8 +15,8 @@ class CreateCountryApplyClassToDeductionsTable extends Migration
     {
         Schema::create('country_class_deductions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('country_tax_deduction_class_id')->nullable()->constrained();
-            $table->foreignId('country_tax_class_id')->nullable()->constrained();
+            $table->foreignId('country_tax_deduction_class_id')->nullable()->constrained('country_tax_deduction_classes');
+            $table->foreignId('country_tax_class_id')->nullable()->constrained('country_tax_classes');
             $table->timestamps();
         });
     }
@@ -28,6 +28,6 @@ class CreateCountryApplyClassToDeductionsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('country_apply_class_to_deductions');
+        Schema::dropIfExists('country_class_deductions');
     }
 }

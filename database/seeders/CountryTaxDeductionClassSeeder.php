@@ -32,7 +32,7 @@ class CountryTaxDeductionClassSeeder extends Seeder
         	'country_id' => 1,
         	'tax_deduction_class_id' => 3,
             'deduction_type' => 'amount',
-            'value' => 5000,
+            'value' => 0,
         ]);
     }
 }
