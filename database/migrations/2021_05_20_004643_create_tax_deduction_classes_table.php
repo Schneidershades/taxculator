@@ -19,6 +19,7 @@ class CreateTaxDeductionClassesTable extends Migration
             $table->string('code')->nullable();
             $table->string('short_name')->nullable();
             $table->string('slug')->nullable();
+            $table->integer('unit')->nullable();
             $table->timestamps();
         });
     }
