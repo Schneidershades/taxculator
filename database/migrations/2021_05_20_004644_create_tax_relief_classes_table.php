@@ -19,6 +19,8 @@ class CreateTaxReliefClassesTable extends Migration
             $table->string('code')->nullable();
             $table->string('short_name')->nullable();
             $table->string('slug')->nullable();
+            $table->string('type')->nullable();
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

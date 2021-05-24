@@ -43,20 +43,5 @@ class CountryClassDeduction extends Seeder
             'country_tax_deduction_class_id' => 2,
             'country_tax_class_id' => 3,
         ]);
-
-        $class = CountryClassDeduction::create([
-            'country_tax_deduction_class_id' => 3,
-            'country_tax_class_id' => 1,
-        ]);
-
-        $class = CountryClassDeduction::create([
-            'country_tax_deduction_class_id' => 3,
-            'country_tax_class_id' => 2,
-        ]);
-
-        $class = CountryClassDeduction::create([
-            'country_tax_deduction_class_id' => 3,
-            'country_tax_class_id' => 3,
-        ]);
     }
 }

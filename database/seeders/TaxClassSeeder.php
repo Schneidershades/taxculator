@@ -15,31 +15,31 @@ class TaxClassSeeder extends Seeder
     public function run()
     {
         $class = TaxClass::create([
-        	'name' => 'basic_salary',
+        	'name' => 'Basic Salary',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'housing',
+            'name' => 'Housing',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'clothing',
+            'name' => 'Clothing',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'utility',
+            'name' => 'Utility',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'launch',
+            'name' => 'Lunch',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'education',
+            'name' => 'Education',
         ]);
 
         $class = TaxClass::create([
-            'name' => 'vacation',
+            'name' => 'Vacation',
         ]);
     }
 }
