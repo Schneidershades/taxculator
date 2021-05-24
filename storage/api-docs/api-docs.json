@@ -30,9 +30,117 @@
                     }
                 }
             }
+        },
+        "/api/v1/tax-transaction": {
+            "post": {
+                "tags": [
+                    "company"
+                ],
+                "summary": "Post annual tax of an employee",
+                "description": "Post annual tax of an employee",
+                "operationId": "taxTransactions",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TaxTransactionCreateFormRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful signin",
+                        "content": {
+                            "application/json": {}
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "unauthenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
         }
     },
     "components": {
+        "schemas": {
+            "TaxTransactionCreateFormRequest": {
+                "title": "Tax Transaction Form Request Fields",
+                "description": "Tax Transaction request body data",
+                "required": [
+                    "email"
+                ],
+                "properties": {
+                    "taxClasses": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "basic_salary": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "housing": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "clothing": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "utility": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "lunch": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "education": {
+                                    "type": "int",
+                                    "example": "10000"
+                                },
+                                "vacation": {
+                                    "type": "int",
+                                    "example": "10000"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "offer_nhf": {
+                        "title": "Transaction Description",
+                        "description": "Description of the transaction ",
+                        "type": "boolean",
+                        "example": "true/false"
+                    },
+                    "offer_pension": {
+                        "title": "Transaction Description",
+                        "description": "Description of the transaction ",
+                        "type": "boolean",
+                        "example": "true/false"
+                    },
+                    "offer_life_insurance": {
+                        "title": "Transaction Description",
+                        "description": "Description of the transaction ",
+                        "type": "boolean",
+                        "example": "true/false"
+                    }
+                },
+                "type": "object"
+            }
+        },
         "securitySchemes": {
             "bearerAuth": {
                 "type": "http",
