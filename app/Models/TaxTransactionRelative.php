@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class TaxTransactionRelative extends Model
 {
     use HasFactory;
+
+    public function transactionRelatable()
+    {
+        return $this->morphTo();
+    }
 }
