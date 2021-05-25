@@ -8,7 +8,7 @@ use App\Models\Country;
 use App\Models\TaxDeduction;
 use App\Models\CountryTaxClass;
 
-class CountryTaxDeduction extends Model
+class CountryTaxDeductionClass extends Model
 {
     use HasFactory;
 

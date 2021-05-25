@@ -7,7 +7,7 @@ use App\Http\Resources\Tax\TaxDeductionResource;
 use App\Http\Resources\Country\CountryClassDeductionResource;
 use App\Models\TaxClass;
 
-class CountryTaxDeductionResource extends JsonResource
+class CountryTaxDeductionClassResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

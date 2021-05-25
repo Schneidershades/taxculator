@@ -5,7 +5,7 @@ namespace App\Http\Resources\Country;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Country\CountryTaxClassResource;
 use App\Http\Resources\Country\CountryTaxReliefClassResource;
-use App\Http\Resources\Country\CountryTaxDeductionResource;
+use App\Http\Resources\Country\CountryTaxDeductionClassResource;
 
 class CountryResource extends JsonResource
 {
@@ -25,7 +25,7 @@ class CountryResource extends JsonResource
             'currency' => $this->currency,
             'taxClasses' => CountryTaxClassResource::collection($this->countryTaxClasses),
             'taxReliefs' => CountryTaxReliefClassResource::collection($this->countryTaxReliefClasses),
-            'taxDeductions' => CountryTaxDeductionResource::collection($this->countryTaxDeductiones),
+            'taxDeductions' => CountryTaxDeductionClassResource::collection($this->countryTaxDeductiones),
         ];
     }
 }

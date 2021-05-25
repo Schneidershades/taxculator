@@ -4,7 +4,7 @@ namespace App\Http\Resources\Country;
 
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class CountryTaxDeductionCollection extends ResourceCollection
+class CountryTaxDeductionClassCollection extends ResourceCollection
 {
     /**
      * Transform the resource collection into an array.
@@ -15,7 +15,7 @@ class CountryTaxDeductionCollection extends ResourceCollection
     public function toArray($request)
     {
         return [
-            'data' => CountryTaxDeductionResource::collection($this->collection)
+            'data' => CountryTaxDeductionClassResource::collection($this->collection)
         ];
     }
 }
