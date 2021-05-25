@@ -7,7 +7,7 @@ use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;
 use App\Models\TaxClass;
 use App\Models\TaxTransaction;
 use App\Models\TaxTransactionRelative;
-use App\Models\TaxDeduction;
+use App\Models\TaxDeductionClass;
 use App\Models\CountryTaxDeductionClass;
 use App\Models\CountryClassDeduction;
 use App\Models\CountryTaxReliefClass;
@@ -28,18 +28,18 @@ class TaxTransactionService
 
     	foreach ($request['taxDeductions'][0] as $key => $value) {
 
-    		$taxDeduction = TaxDeduction::where('short_name', $key)->first();
+    		$taxDeduction = TaxDeductionClass::where('short_name', $key)->first();
 
-    		$countryTaxDeduction = CountryTaxDeductionClass::where('tax_deduction_class_id', $taxDeduction->id)->first();
+    		$countryTaxDeductionClass = CountryTaxDeductionClass::where('tax_deduction_class_id', $taxDeduction->id)->first();
 
-    		if($countryTaxDeduction->deduction_type == 'amount'){
-    			$nhf = $countryTaxDeduction->value;
+    		if($countryTaxDeductionClass->deduction_type == 'amount'){
+    			$nhf = $countryTaxDeductionClass->value;
     		}
 
-    		if($countryTaxDeduction->deduction_type == 'percentage'){
-    			$divide = $countryTaxDeduction->value / 100;
+    		if($countryTaxDeductionClass->deduction_type == 'percentage'){
+    			$divide = $countryTaxDeductionClass->value / 100;
 
-    			$countryClassDeduction = CountryClassDeduction::where('country_tax_deduction_class_id', $countryTaxDeduction->id)
+    			$countryClassDeduction = CountryClassDeduction::where('country_tax_deduction_class_id', $countryTaxDeductionClass->id)
     										->pluck('country_tax_class_id')
     										->toArray();
 
@@ -51,7 +51,7 @@ class TaxTransactionService
 
     			$sum = array_sum($items) * $divide;
 
-                $this->newTransactionRelative($taxTransaction->id, 'countryTaxDeduction', $sum, 'percentage', $countryTaxDeduction->id, 'countryTaxDeduction');
+                $this->newTransactionRelative($taxTransaction->id, 'countryTaxDeductionClass', $sum, 'percentage', $countryTaxDeductionClass->id, 'countryTaxDeductionClass');
 
     		}
     	}
