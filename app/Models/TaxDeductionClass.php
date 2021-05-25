@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TaxClass;
 
-class TaxDeductionClass extends Model
+class TaxDeduction extends Model
 {
     use HasFactory;
 }

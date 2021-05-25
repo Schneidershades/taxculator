@@ -13,6 +13,29 @@ class Controller extends BaseController
 {
     use ApiResponder, AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
+    public function requestAndDbIntersection($request, $model, array $excludeFieldsForLogic = []){
+          $requestColumns = array_keys($request->all());
+
+          $model = $model;
+
+          $tableColumns = $this->getColumns($model->getTable());
+
+          $fields = array_intersect($requestColumns, $tableColumns);
+
+          foreach($fields as $field){
+               $model->setAttribute($field, $request[$field]);
+          }
+
+          return $model;
+     }
+
+     public function getColumns($model)
+     {
+          $columns = Schema::getColumnListing($model);
+          return $columns;
+     }
+
+
     /**
      * @OA\Info(
      *      version="1.0.0",

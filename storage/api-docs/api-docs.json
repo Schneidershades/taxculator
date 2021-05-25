@@ -31,7 +31,7 @@
                 }
             }
         },
-        "/api/v1/tax-transaction": {
+        "/api/v1/tax-transactions": {
             "post": {
                 "tags": [
                     "company"
@@ -119,23 +119,27 @@
                             "type": "object"
                         }
                     },
-                    "offer_nhf": {
-                        "title": "Transaction Description",
-                        "description": "Description of the transaction ",
-                        "type": "boolean",
-                        "example": "true/false"
+                    "taxDeductions": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "nhf": {
+                                    "type": "int",
+                                    "example": true
+                                },
+                                "pension": {
+                                    "type": "int",
+                                    "example": true
+                                }
+                            },
+                            "type": "object"
+                        }
                     },
-                    "offer_pension": {
-                        "title": "Transaction Description",
-                        "description": "Description of the transaction ",
-                        "type": "boolean",
-                        "example": "true/false"
-                    },
-                    "offer_life_insurance": {
-                        "title": "Transaction Description",
-                        "description": "Description of the transaction ",
-                        "type": "boolean",
-                        "example": "true/false"
+                    "country_id": {
+                        "title": "country_id",
+                        "description": "country_id",
+                        "type": "integer",
+                        "example": "1"
                     }
                 },
                 "type": "object"

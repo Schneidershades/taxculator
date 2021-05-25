@@ -17,7 +17,7 @@ use Illuminate\Foundation\Http\FormRequest;
 class TaxTransactionCreateFormRequest extends FormRequest
 {
     /**
-    *   @OA\Property(property="taxClasses", type="object", type="array",
+    *   @OA\Property(property="taxClasses", type="array", type="array",
     *            @OA\Items(
     *                @OA\Property(property="basic_salary", type="int", example="10000"),
     *                @OA\Property(property="housing", type="int", example="10000"),
@@ -31,42 +31,31 @@ class TaxTransactionCreateFormRequest extends FormRequest
     *    ),
     */
 
-    public $taxClasses;
+    private $taxClasses;
+
+    /**
+    *   @OA\Property(property="taxDeductions", type="array", type="array",
+    *            @OA\Items(
+    *                @OA\Property(property="nhf", type="int", example=true),
+    *                @OA\Property(property="pension", type="int", example=true),
+    *            ),
+    *        ),
+    *    ),
+    */
+
+    private $taxDeductions;
 
 
-     /**
+    /**
      * @OA\Property(
-     *      title="Transaction Description",
-     *      description="Description of the transaction ",
-     *      example="true/false"
+     *      title="country_id",
+     *      description="country_id",
+     *      example="1"
      * )
      *
-     * @var boolean
+     * @var int
      */
-    private $offer_nhf;
-
-
-     /**
-     * @OA\Property(
-     *      title="Transaction Description",
-     *      description="Description of the transaction ",
-     *      example="true/false"
-     * )
-     *
-     * @var boolean
-     */
-    private $offer_pension;
-
-     /**
-     * @OA\Property(
-     *      title="Transaction Description",
-     *      description="Description of the transaction ",
-     *      example="true/false"
-     * )
-     *
-     * @var boolean
-     */
-    private $offer_life_insurance;
+    public $country_id;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -87,17 +76,19 @@ class TaxTransactionCreateFormRequest extends FormRequest
     {
         return [
             'taxClasses' => 'required|array',
-            'taxClasses.basic_salary' => 'numeric',
-            'taxClasses.housing' =>'numeric',
-            'taxClasses.clothing' =>'numeric',
-            'taxClasses.utility' =>'numeric',
-            'taxClasses.lunch' =>'numeric',
-            'taxClasses.education' =>'numeric',
-            'taxClasses.vacation' =>'numeric',
+            'taxClasses.*.basic_salary' => 'required|numeric',
+            'taxClasses.*.housing' =>'numeric',
+            'taxClasses.*.clothing' =>'numeric',
+            'taxClasses.*.utility' =>'numeric',
+            'taxClasses.*.lunch' =>'numeric',
+            'taxClasses.*.education' =>'numeric',
+            'taxClasses.*.vacation' =>'numeric',
 
-            'offer_nhf' => 'required|boolean',
-            'offer_pension' => 'required|boolean',
-            'offer_life_insurance' => 'required|boolean',
+            'taxDeductions' => 'required|array',
+            'taxDeductions.*.nhf' => 'boolean',
+            'taxDeductions.*.pension' => 'boolean',
+
+            'country_id' => 'required|int',
         ];
     }
 }

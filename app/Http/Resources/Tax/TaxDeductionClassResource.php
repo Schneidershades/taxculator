@@ -4,7 +4,7 @@ namespace App\Http\Resources\Tax;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class TaxDeductionClassResource extends JsonResource
+class TaxDeductionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

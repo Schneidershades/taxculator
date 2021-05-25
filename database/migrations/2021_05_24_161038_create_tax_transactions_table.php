@@ -15,8 +15,8 @@ class CreateTaxTransactionsTable extends Migration
     {
         Schema::create('tax_transactions', function (Blueprint $table) {
             $table->id();
-            $table->integer('tax_transactionable_id')->nullable();
-            $table->string('tax_transactionable_type')->nullable();
+            $table->string('identifier')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained();
             $table->timestamps();
         });
     }

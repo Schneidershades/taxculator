@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CountryTaxClass;
-use App\Models\CountryTaxDeductionClass;
+use App\Models\CountryTaxDeduction;
 use App\Models\CountryTaxReliefClass;
 use App\Http\Resources\Country\CountryCollection;
 use App\Http\Resources\Country\CountryResource;
@@ -22,9 +22,9 @@ class Country extends Model
     	return $this->hasMany(CountryTaxClass::class);
     }
 
-    public function countryTaxDeductionClasses ()
+    public function countryTaxDeductiones ()
     {
-    	return $this->hasMany(CountryTaxDeductionClass::class);
+    	return $this->hasMany(CountryTaxDeduction::class);
     }
 
     public function countryTaxReliefClasses ()

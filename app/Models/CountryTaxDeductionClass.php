@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Country;
-use App\Models\TaxDeductionClass;
+use App\Models\TaxDeduction;
 use App\Models\CountryTaxClass;
 
-class CountryTaxDeductionClass extends Model
+class CountryTaxDeduction extends Model
 {
     use HasFactory;
 
@@ -19,7 +19,7 @@ class CountryTaxDeductionClass extends Model
 
     public function taxDeductionClass()
     {
-    	return $this->belongsTo(TaxDeductionClass::class);
+    	return $this->belongsTo(TaxDeduction::class);
     }
 
     public function countryTaxClasses()

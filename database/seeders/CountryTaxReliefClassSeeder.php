@@ -19,7 +19,10 @@ class CountryTaxReliefClassSeeder extends Seeder
         	'tax_relief_class_id' => 1,
         	'relief_type' => 'percentage',
             'value' => 1,
-            'minimum_amount' => 20000000,
+            'minimum_amount' => 20000001,
+            'maximum_amount' => 0,
+            'minimum_status' => 'static',
+            'maximum_status' => 'unlimited',
         ]);
 
         $class = CountryTaxReliefClass::create([
@@ -27,7 +30,10 @@ class CountryTaxReliefClassSeeder extends Seeder
             'tax_relief_class_id' => 2,
             'relief_type' => 'amount',
             'value' => 200000,
-            'minimum_amount' => 0,
+            'minimum_amount' => 1,
+            'maximum_amount' => 20000000,
+            'minimum_status' => 'static',
+            'maximum_status' => 'static',
         ]);
 
         $class = CountryTaxReliefClass::create([
@@ -35,7 +41,10 @@ class CountryTaxReliefClassSeeder extends Seeder
             'tax_relief_class_id' => 3,
             'relief_type' => 'percentage',
             'value' => 20,
+            'minimum_amount' => 1,
             'minimum_amount' => 0,
+            'minimum_status' => 'unlimited',
+            'maximum_status' => 'unlimited',
         ]);
     }
 }

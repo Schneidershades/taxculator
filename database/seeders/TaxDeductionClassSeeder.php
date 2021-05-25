@@ -22,7 +22,7 @@ class TaxDeductionClassSeeder extends Seeder
 
         $class = TaxDeductionClass::create([
             'name' => 'National Housing Fund',
-            'short_name' => 'NHF',
+            'short_name' => 'nhf',
             'unit' => 1,
         ]);
 

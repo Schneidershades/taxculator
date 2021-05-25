@@ -3,11 +3,11 @@
 namespace App\Http\Resources\Country;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Tax\TaxDeductionClassResource;
+use App\Http\Resources\Tax\TaxDeductionResource;
 use App\Http\Resources\Country\CountryClassDeductionResource;
 use App\Models\TaxClass;
 
-class CountryTaxDeductionClassResource extends JsonResource
+class CountryTaxDeductionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

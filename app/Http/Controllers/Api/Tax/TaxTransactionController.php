@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Api\Tax;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;
+use App\Services\Tax\TaxTransactionService;
 
 class TaxTransactionController extends Controller
 {
+    private $service;
+
+    public function __construct(TaxTransactionService $service)
+    {
+        $this->service = $service;
+    }
     /**
     * @OA\Post(
-    *      path="/api/v1/tax-transaction",
+    *      path="/api/v1/tax-transactions",
     *      operationId="taxTransactions",
     *      tags={"company"},
     *      summary="Post annual tax of an employee",
@@ -40,8 +47,8 @@ class TaxTransactionController extends Controller
     *      security={ {"bearerAuth": {}} },
     * )
     */
-    public function store (Request $request)
+    public function store (TaxTransactionCreateFormRequest $request)
     {
-    	return $request;
+    	return $this->service->register($request);
     }
 }

@@ -20,6 +20,9 @@ class CreateCountryTaxReliefClassesTable extends Migration
             $table->string('relief_type');
             $table->integer('value');
             $table->double('minimum_amount',13,2)->default(0);
+            $table->double('maximum_amount',13,2)->default(0);
+            $table->string('minimum_status')->nullable();
+            $table->string('maximum_status')->nullable();
             $table->timestamps();
         });
     }
