@@ -12,6 +12,6 @@ class TaxClass extends Model
 
     public function transactionRelations()
     {
-        return return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');;
+        return return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');
     }
 }

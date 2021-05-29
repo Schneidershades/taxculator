@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\CountryTaxClass;
 use App\Models\CountryTaxDeductionClass;
 use App\Models\CountryTaxReliefClass;
+use App\Models\CountryTaxTarrif;
 use App\Http\Resources\Country\CountryCollection;
 use App\Http\Resources\Country\CountryResource;
 
@@ -30,5 +31,10 @@ class Country extends Model
     public function countryTaxReliefClasses ()
     {
     	return $this->hasMany(CountryTaxReliefClass::class);
+    }
+
+    public function countryTaxTarrifs ()
+    {
+        return $this->hasMany(CountryTaxTarrif::class);
     }
 }
