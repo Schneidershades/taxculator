@@ -133,9 +133,9 @@ class TaxTransactionService
 
                     $amountRendered = $remainingAmount - $tarrif['fixed_amount'];
 
-                    if($amountRendered <= 0){
+                    if($amountRendered <= 0 || $tarrif['fixed_amount'] == '0.00'){
                         $amountByPercentage = $remainingAmount * $tarrif['fixed_percentage']/100;
-                    }elseif($amountRendered > 0){
+                    }elseif($amountRendered > 0 ){
                         $amountByPercentage = $tarrif['fixed_amount'] * $tarrif['fixed_percentage']/100;
                     }
 
