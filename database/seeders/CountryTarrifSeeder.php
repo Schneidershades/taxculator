@@ -97,7 +97,7 @@ class CountryTarrifSeeder extends Seeder
         $class = CountryTaxTarrif::create([
             'country_id' => 1,
             'type' => 'fixed',
-            'fixed_amount' => 1600000,
+            'fixed_amount' => 0.00,
             'fixed_percentage' => 24,
             'min_range_amount' => 0,
             'max_range_amount' => 0,
@@ -108,24 +108,6 @@ class CountryTarrifSeeder extends Seeder
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
             'ordering_id' => 6,
-        ]);
-
-
-
-        $class = CountryTaxTarrif::create([
-            'country_id' => 1,
-            'type' => 'fixed',
-            'fixed_amount' => 0,
-            'fixed_percentage' => 24,
-            'min_range_amount' => 0,
-            'max_range_amount' => 0,
-            'min_range_percentage' => 0,
-            'max_range_percentage' => 0,
-            'above_fixed_amount_range' => true,
-            'below_fixed_amount_range' => false,
-            'above_fixed_percentage_range' => false,
-            'below_fixed_percentage_range' => false,
-            'ordering_id' => 7,
         ]);
     }
 }
