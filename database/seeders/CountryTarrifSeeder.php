@@ -27,6 +27,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
+            'ordering_id' => 1,
         ]);
 
         $class = CountryTaxTarrif::create([
@@ -42,7 +43,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 1,
+            'ordering_id' => 2,
         ]);
 
         $class = CountryTaxTarrif::create([
@@ -58,7 +59,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 2,
+            'ordering_id' => 3,
         ]);
 
         $class = CountryTaxTarrif::create([
@@ -74,7 +75,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 3,
+            'ordering_id' => 4,
         ]);
 
         $class = CountryTaxTarrif::create([
@@ -90,7 +91,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 4,
+            'ordering_id' => 5,
         ]);
 
         $class = CountryTaxTarrif::create([
@@ -106,7 +107,7 @@ class CountryTarrifSeeder extends Seeder
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 5,
+            'ordering_id' => 6,
         ]);
 
 
@@ -120,11 +121,11 @@ class CountryTarrifSeeder extends Seeder
             'max_range_amount' => 0,
             'min_range_percentage' => 0,
             'max_range_percentage' => 0,
-            'above_fixed_amount_range' => false,
+            'above_fixed_amount_range' => true,
             'below_fixed_amount_range' => false,
             'above_fixed_percentage_range' => false,
             'below_fixed_percentage_range' => false,
-            'ordering_id' => 6,
+            'ordering_id' => 7,
         ]);
     }
 }

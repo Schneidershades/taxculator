@@ -49,6 +49,6 @@ class TaxTransactionController extends Controller
     */
     public function store (TaxTransactionCreateFormRequest $request)
     {
-    	return $this->service->register($request);
+    	return $this->showOne($this->service->register($request));
     }
 }

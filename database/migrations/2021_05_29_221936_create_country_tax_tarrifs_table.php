@@ -27,7 +27,8 @@ class CreateCountryTaxTarrifsTable extends Migration
             $table->boolean('below_fixed_amount_range')->default(false);
             $table->boolean('above_fixed_percentage_range')->default(false);
             $table->boolean('below_fixed_percentage_range')->default(false);
-            $table->integer('ordering_id');
+            $table->integer('ordering_id')->unique();
+            $table->boolean('used')->default(true);
             $table->timestamps();
         });
     }

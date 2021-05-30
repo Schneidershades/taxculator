@@ -24,6 +24,6 @@ class CountryTaxClass extends Model
 
     public function transactionRelations()
     {
-        return return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');;
+        return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');
     }
 }
