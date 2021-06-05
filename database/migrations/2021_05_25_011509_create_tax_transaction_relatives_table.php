@@ -13,11 +13,11 @@ class CreateTaxTransactionRelativesTable extends Migration
      */
     public function up()
     {
-        Schema::create('tax_transaction_relatives', function (Blueprint $table) {
+        Schema::create('tax_transaction_relations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tax_transaction_id')->nullable()->constrained();
-            $table->integer('tax_relationable_id')->nullable();
-            $table->string('tax_relationable_type')->nullable();
+            $table->integer('tax_transaction_relationable_id')->nullable();
+            $table->string('tax_transaction_relationable_type')->nullable();
             $table->string('description')->nullable();
             $table->string('value')->nullable();
             $table->string('applied_by')->nullable();
@@ -32,6 +32,6 @@ class CreateTaxTransactionRelativesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('tax_transaction_relatives');
+        Schema::dropIfExists('tax_transaction_relations');
     }
 }

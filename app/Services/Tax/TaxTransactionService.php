@@ -6,7 +6,7 @@ use App\Services\Tax\TaxTransactionClass;
 use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;
 use App\Models\TaxClass;
 use App\Models\TaxTransaction;
-use App\Models\TaxTransactionRelative;
+use App\Models\TaxTransactionRelation;
 use App\Models\TaxDeductionClass;
 use App\Models\CountryTaxDeductionClass;
 use App\Models\CountryClassDeduction;
@@ -72,7 +72,7 @@ class TaxTransactionService
             $model_id = $relief->id;
             $model_type = 'countryTaxReliefClass';
 
-            if($relief['minimum_status'] == 'unlimited' && $relief['maximum_status'] == 'unlimited'){
+            if($relief['minimum_status'] == 'unlimited' && $relief['maximum_status'] == 'unlimited' ){
                 $value = $grossIncome * $relief->value / 100;
                 $reliefAmount += $value;
                 $this->newTransactionRelative($taxTransaction->id, $model_type, $value, $applied_by, $model_id, $model_type);
@@ -107,10 +107,10 @@ class TaxTransactionService
 
     private function newTransactionRelative ($id, $description, $value, $applied_by, $model_id=null, $model_type=null)
     {
-        $taxRelation = new TaxTransactionRelative;
+        $taxRelation = new TaxTransactionRelation;
         $taxRelation->tax_transaction_id = $id;
-        $taxRelation->tax_relationable_id = $model_id;
-        $taxRelation->tax_relationable_type = $model_type;
+        $taxRelation->tax_transaction_relationable_id = $model_id;
+        $taxRelation->tax_transaction_relationable_type = $model_type;
         $taxRelation->description = $description;
         $taxRelation->value = $value;
         $taxRelation->applied_by = $applied_by;

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Country;
 use App\Models\TaxClass;
-use App\Models\TaxTransactionRelative;
+use App\Models\TaxTransactionRelation;
 
 class CountryTaxClass extends Model
 {
@@ -24,6 +24,6 @@ class CountryTaxClass extends Model
 
     public function transactionRelations()
     {
-        return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');
+        return $this->morphMany(TaxTransactionRelation::class, 'taxTransactionRelationable');
     }
 }

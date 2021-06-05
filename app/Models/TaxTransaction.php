@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TaxTransactionRelative;
+use App\Models\TaxTransactionRelation;
 use App\Models\CountryTaxDeductionClass;
 use App\Models\CountryTaxReliefClass;
 use App\Models\TaxClasses;
@@ -20,30 +20,30 @@ class TaxTransaction extends Model
 
     public function taxRelatives()
     {
-    	return $this->hasMany(TaxTransactionRelative::class);
+    	return $this->hasMany(TaxTransactionRelation::class);
     }
 
     public function taxTranactionRelatives()
     {
-    	return $this->hasMany(TaxTransactionRelative::class)
-                    ->where('tax_relationable_type', 'taxClass');
+    	return $this->hasMany(TaxTransactionRelation::class)
+                    ->where('tax_transaction_relationable_type', 'taxClass');
     }
 
     public function countryTaxDeductionClass ()
     {
     	return $this->hasMany(CountryTaxDeductionClass::class)
-                    ->where('tax_relationable_id', 'countryTaxDeductionClass');
+                    ->where('tax_transaction_relationable_type', 'countryTaxDeductionClass');
     }
 
     public function countryTaxReliefClass ()
     {
     	return $this->hasMany(CountryTaxReliefClass::class)
-                    ->where('tax_relationable_id', 'countryTaxReliefClass');
+                    ->where('tax_transaction_relationable_type', 'countryTaxReliefClass');
     }
 
     public function taxClasses ()
     {
     	return $this->hasMany(TaxClasses::class)
-                    ->where('tax_relationable_id', 'taxClass');
+                    ->where('tax_transaction_relationable_type', 'taxClass');
     }
 }

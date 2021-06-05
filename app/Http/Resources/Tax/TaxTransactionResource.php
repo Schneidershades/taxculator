@@ -3,7 +3,7 @@
 namespace App\Http\Resources\Tax;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Tax\TaxTransactionRelativeResource;
+use App\Http\Resources\Tax\TaxTransactionRelationResource;
 
 class TaxTransactionResource extends JsonResource
 {
@@ -18,7 +18,7 @@ class TaxTransactionResource extends JsonResource
         return [
             'id' => $this->id,
             'identifier' => $this->identifier,
-            'taxTranactionRelatives' => TaxTransactionRelativeResource::collection($this->taxRelatives)->collection->groupBy('description'),
+            'taxTranactionRelatives' => TaxTransactionRelationResource::collection($this->taxRelatives)->collection->groupBy('description'),
         ];
     }
 }

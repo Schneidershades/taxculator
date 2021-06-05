@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TaxTransactionRelative;
+use App\Models\TaxTransactionRelation;
 
 class TaxClass extends Model
 {
@@ -12,6 +12,6 @@ class TaxClass extends Model
 
     public function transactionRelations()
     {
-        return $this->morphMany(TaxTransactionRelative::class, 'transactionRelatable');
+        return $this->morphMany(TaxTransactionRelation::class, 'taxTransactionRelationable');
     }
 }
