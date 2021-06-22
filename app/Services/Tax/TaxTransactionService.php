@@ -78,17 +78,20 @@ class TaxTransactionService
                 $this->newTransactionRelative($taxTransaction->id, $model_type, $value, $applied_by, $model_id, $model_type);
             }
 
-    		if($grossIncome > $relief['minimum_amount'] && $grossIncome > $relief['maximum_amount'] && $relief->taxReliefClass->code == 'fixed'){
-
+            if($grossIncome >= $relief['minimum_amount'] && $relief['minimum_status'] == 'static' && $relief['maximum_status'] == 'unlimited' ){
                 $value = $grossIncome * $relief->value / 100;
                 $reliefAmount += $value;
+                $this->newTransactionRelative($taxTransaction->id, $model_type, $value, $applied_by, $model_id, $model_type);
+            }
 
+    		if($grossIncome > $relief['minimum_amount'] && $grossIncome > $relief['maximum_amount'] && $relief->taxReliefClass->code == 'fixed'){
+                $value = $grossIncome * $relief->value / 100;
+                $reliefAmount += $value;
                 $this->newTransactionRelative($taxTransaction->id, $model_type, $value, $applied_by, $model_id, $model_type);
 
     		}elseif($grossIncome > $relief['minimum_amount'] && $grossIncome < $relief['maximum_amount'] && $relief['maximum_status'] == 'static' && $relief['maximum_status'] == 'static'){
                 $value = $relief->value;
                 $reliefAmount += $relief->value;
-
                 $this->newTransactionRelative($taxTransaction->id, $model_type, $value, $applied_by, $model_id, $model_type);
     		}
     	}
