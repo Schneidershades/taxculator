@@ -9,4 +9,9 @@ use App\Models\TaxClass;
 class TaxDeductionClass extends Model
 {
     use HasFactory;
+
+    public function rules()
+    {
+        return $this->hasMany(TaxDeductionRule::class, 'tax_deduction_class_id');
+    }
 }

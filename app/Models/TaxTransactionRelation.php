@@ -14,8 +14,24 @@ class TaxTransactionRelation extends Model
     public $oneItem = TaxTransactionRelationResource::class;
     public $allItems = TaxTransactionRelationCollection::class;
 
+    protected $casts = [
+        'tax_transaction_id'               => 'integer',
+        'tax_transaction_relationable_id'  => 'integer',
+        'value'                            => 'decimal:2',
+    ];
+
+    public function transaction()
+    {
+        return $this->belongsTo(TaxTransaction::class, 'tax_transaction_id');
+    }
+
     public function taxTransactionRelationable()
     {
         return $this->morphTo();
+    }
+
+    public function scopeOfType($q, string $description)
+    {
+        return $q->where('description', $description);
     }
 }

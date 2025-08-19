@@ -18,37 +18,17 @@ class TaxTransaction extends Model
     public $oneItem = TaxTransactionResource::class;
     public $allItems = TaxTransactionCollection::class;
 
-    public function taxRelatives()
-    {
-        return $this->hasMany(TaxTransactionRelation::class);
-    }
-
-    public function taxTransactionRelatives()
-    {
-        return $this->hasMany(TaxTransactionRelation::class)
-            ->where('tax_transaction_relationable_type', 'taxClass');
-    }
-
-    public function countryTaxDeductionClass()
-    {
-        return $this->hasMany(CountryTaxDeductionClass::class)
-            ->where('tax_transaction_relationable_type', 'countryTaxDeductionClass');
-    }
-
-    public function countryTaxReliefClass()
-    {
-        return $this->hasMany(CountryTaxReliefClass::class)
-            ->where('tax_transaction_relationable_type', 'countryTaxReliefClass');
-    }
-
-    public function taxClasses()
-    {
-        return $this->hasMany(TaxClasses::class)
-            ->where('tax_transaction_relationable_type', 'taxClass');
-    }
+    protected $casts = [
+        'user_id' => 'integer',
+    ];
 
     public function relations()
     {
         return $this->hasMany(TaxTransactionRelation::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

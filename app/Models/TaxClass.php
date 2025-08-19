@@ -10,8 +10,8 @@ class TaxClass extends Model
 {
     use HasFactory;
 
-    public function transactionRelations()
+    public function links()
     {
-        return $this->morphMany(TaxTransactionRelation::class, 'taxTransactionRelationable');
+        return $this->hasMany(TaxClassLink::class);
     }
 }

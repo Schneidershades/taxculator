@@ -3,7 +3,6 @@
 namespace App\Services\Tax;
 
 use App\Models\TaxClass;
-use App\Models\TaxTariff;
 use App\Models\TaxVersion;
 use App\Models\TaxReliefRule;
 use App\Models\TaxTransaction;
