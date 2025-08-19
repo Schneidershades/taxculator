@@ -16,18 +16,18 @@ class StateDeductionOverrideSeeder extends Seeder
     {
         $year = 2025;
 
-        $lag = TaxJurisdiction::state('NG','LA')->firstOrFail();
-        $vState = TaxVersion::where('tax_jurisdiction_id',$lag->id)->where('tax_year',$year)->firstOrFail();
+        $lag = TaxJurisdiction::state('NG', 'LA')->firstOrFail();
+        $vState = TaxVersion::where('tax_jurisdiction_id', $lag->id)->where('tax_year', $year)->firstOrFail();
 
-        $nhf = TaxDeductionClass::where('short_name','nhf')->firstOrFail();
+        $nhf = TaxDeductionClass::where('short_name', 'nhf')->firstOrFail();
 
         // Example: Lagos sets NHF to 2.0% (OVERRIDE)
         $r = TaxDeductionRule::updateOrCreate(
-            ['tax_version_id'=>$vState->id,'tax_deduction_class_id'=>$nhf->id],
-            ['deduction_type'=>'percentage','value'=>2.0,'combine_mode'=>'override']
+            ['tax_version_id' => $vState->id, 'tax_deduction_class_id' => $nhf->id],
+            ['deduction_type' => 'percentage', 'value' => 2.0, 'combine_mode' => 'override']
         );
         $r->baseClasses()->sync(
-            TaxClass::whereIn('short_name',['basic_salary','housing','clothing'])->pluck('id')->all()
+            TaxClass::whereIn('short_name', ['basic_salary', 'housing', 'clothing'])->pluck('id')->all()
         );
     }
-}}
+}
