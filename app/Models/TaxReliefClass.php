@@ -13,4 +13,11 @@ class TaxReliefClass extends Model
 
     public $oneItem = TaxReliefClassResource::class;
     public $allItems = TaxReliefClassCollection::class;
+
+
+
+    public function rules()
+    {
+        return $this->hasMany(TaxReliefRule::class, 'tax_relief_class_id');
+    }
 }

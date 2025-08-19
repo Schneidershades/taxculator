@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class TaxVersion extends Model
+{
+    protected $casts = [
+        'tax_jurisdiction_id' => 'integer',
+        'tax_year'            => 'integer',
+        'effective_from'      => 'date',
+        'effective_to'        => 'date',
+    ];
+
+    public function jurisdiction()
+    {
+        return $this->belongsTo(TaxJurisdiction::class, 'tax_jurisdiction_id');
+    }
+
+    public function tariffs()
+    {
+        return $this->hasMany(TaxTariff::class);
+    }
+
+    public function classLinks()
+    {
+        return $this->hasMany(TaxClassLink::class);
+    }
+
+    public function deductionRules()
+    {
+        return $this->hasMany(TaxDeductionRule::class);
+    }
+
+    public function reliefRules()
+    {
+        return $this->hasMany(TaxReliefRule::class);
+    }
+
+    // Scope for a given year
+    public function scopeForYear($q, int $year)
+    {
+        return $q->where('tax_year', $year);
+    }
+}

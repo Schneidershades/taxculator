@@ -20,30 +20,35 @@ class TaxTransaction extends Model
 
     public function taxRelatives()
     {
-    	return $this->hasMany(TaxTransactionRelation::class);
+        return $this->hasMany(TaxTransactionRelation::class);
     }
 
-    public function taxTranactionRelatives()
+    public function taxTransactionRelatives()
     {
-    	return $this->hasMany(TaxTransactionRelation::class)
-                    ->where('tax_transaction_relationable_type', 'taxClass');
+        return $this->hasMany(TaxTransactionRelation::class)
+            ->where('tax_transaction_relationable_type', 'taxClass');
     }
 
-    public function countryTaxDeductionClass ()
+    public function countryTaxDeductionClass()
     {
-    	return $this->hasMany(CountryTaxDeductionClass::class)
-                    ->where('tax_transaction_relationable_type', 'countryTaxDeductionClass');
+        return $this->hasMany(CountryTaxDeductionClass::class)
+            ->where('tax_transaction_relationable_type', 'countryTaxDeductionClass');
     }
 
-    public function countryTaxReliefClass ()
+    public function countryTaxReliefClass()
     {
-    	return $this->hasMany(CountryTaxReliefClass::class)
-                    ->where('tax_transaction_relationable_type', 'countryTaxReliefClass');
+        return $this->hasMany(CountryTaxReliefClass::class)
+            ->where('tax_transaction_relationable_type', 'countryTaxReliefClass');
     }
 
-    public function taxClasses ()
+    public function taxClasses()
     {
-    	return $this->hasMany(TaxClasses::class)
-                    ->where('tax_transaction_relationable_type', 'taxClass');
+        return $this->hasMany(TaxClasses::class)
+            ->where('tax_transaction_relationable_type', 'taxClass');
+    }
+
+    public function relations()
+    {
+        return $this->hasMany(TaxTransactionRelation::class);
     }
 }

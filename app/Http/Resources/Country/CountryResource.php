@@ -26,7 +26,7 @@ class CountryResource extends JsonResource
             'currency' => $this->currency,
             'taxClasses' => CountryTaxClassResource::collection($this->countryTaxClasses),
             'taxReliefs' => CountryTaxReliefClassResource::collection($this->countryTaxReliefClasses),
-            'taxDeductions' => CountryTaxDeductionClassResource::collection($this->countryTaxDeductiones),
+            'taxDeductions' => CountryTaxDeductionClassResource::collection($this->countryTaxDeductions),
             'tarrif' => CountryTaxTarrifResource::collection($this->countryTaxTarrifs),
         ];
     }

@@ -18,22 +18,22 @@ class Country extends Model
     public $oneItem = CountryResource::class;
     public $allItems = CountryCollection::class;
 
-    public function countryTaxClasses ()
+    public function countryTaxClasses()
     {
-    	return $this->hasMany(CountryTaxClass::class);
+        return $this->hasMany(CountryTaxClass::class);
     }
 
-    public function countryTaxDeductiones ()
+    public function countryTaxDeductions()
     {
-    	return $this->hasMany(CountryTaxDeductionClass::class);
+        return $this->hasMany(CountryTaxDeductionClass::class);
     }
 
-    public function countryTaxReliefClasses ()
+    public function countryTaxReliefClasses()
     {
-    	return $this->hasMany(CountryTaxReliefClass::class);
+        return $this->hasMany(CountryTaxReliefClass::class);
     }
 
-    public function countryTaxTarrifs ()
+    public function countryTaxTarrifs()
     {
         return $this->hasMany(CountryTaxTarrif::class);
     }

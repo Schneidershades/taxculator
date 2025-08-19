@@ -8,15 +8,9 @@ use App\Services\Tax\TaxTransactionService;
 
 class TaxTransactionController extends Controller
 {
-    private $service;
-
-    public function __construct(TaxTransactionService $service)
-    {
-        $this->service = $service;
-    }
-
     public function store(TaxTransactionCreateFormRequest $request)
     {
-        return $this->showOne($this->service->register($request));
+        $tx = app(TaxTransactionService::class)->register($request->validated());
+        return $this->showOne($tx->load('relations'));
     }
 }

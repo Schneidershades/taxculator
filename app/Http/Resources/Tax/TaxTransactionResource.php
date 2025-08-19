@@ -18,7 +18,7 @@ class TaxTransactionResource extends JsonResource
         return [
             'id' => $this->id,
             'identifier' => $this->identifier,
-            'taxTranactionRelatives' => TaxTransactionRelationResource::collection($this->taxRelatives)->collection->groupBy('description'),
+            'taxTransactionRelatives' => TaxTransactionRelationResource::collection($this->taxRelatives)->collection->groupBy('description'),
         ];
     }
 }
