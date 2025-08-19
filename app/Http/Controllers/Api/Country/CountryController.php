@@ -8,30 +8,13 @@ use App\Models\Country;
 
 class CountryController extends Controller
 {
-	/**
-    * @OA\Get(
-    *      path="/api/v1/countries",
-    *      operationId="all_countries",
-    *      tags={"location"},
-    *      summary="Get all countries",
-    *      description="Get all countries",
-    *      @OA\Response(
-    *          response=200,
-    *          description="Successful operation",
-    *          @OA\MediaType(
-    *             mediaType="application/json",
-    *         ),
-    *       ),
-    * )
-    */
-
-    public function index ()
+    public function index()
     {
-    	return $this->showAll(Country::all());
+        return $this->showAll(Country::all());
     }
 
-    public function show ($id)
+    public function show($id)
     {
-    	return Country::findOrFail($id);
+        return Country::findOrFail($id);
     }
 }
