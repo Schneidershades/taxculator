@@ -10,6 +10,7 @@ use App\Http\Resources\Tax\TaxTransactionRelationCollection;
 class TaxTransactionRelation extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     public $oneItem = TaxTransactionRelationResource::class;
     public $allItems = TaxTransactionRelationCollection::class;

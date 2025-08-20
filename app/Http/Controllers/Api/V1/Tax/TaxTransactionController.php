@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Tax;
+namespace App\Http\Controllers\Api\V1\Tax;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;

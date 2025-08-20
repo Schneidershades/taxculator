@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('relief_type', ['amount', 'percentage']);
             $table->decimal('value', 18, 4)->default(0);
             $table->decimal('minimum_amount', 18, 2)->default(0);
-            $table->decimal('maximum_amount', 18, 2)->nullable(); // null = unlimited
+            $table->decimal('maximum_amount', 18, 2)->nullable();
             $table->enum('minimum_status', ['static', 'unlimited'])->default('static');
             $table->enum('maximum_status', ['static', 'unlimited'])->default('unlimited');
             $table->enum('combine_mode', ['stack', 'override'])->default('stack');

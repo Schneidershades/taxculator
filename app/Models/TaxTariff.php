@@ -9,6 +9,7 @@ use App\Models\Country;
 class TaxTariff extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     protected $casts = [
         'tax_version_id' => 'integer',

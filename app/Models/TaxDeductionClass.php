@@ -9,6 +9,7 @@ use App\Models\TaxClass;
 class TaxDeductionClass extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     public function rules()
     {

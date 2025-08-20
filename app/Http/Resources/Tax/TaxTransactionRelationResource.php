@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Tax;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Tax\TaxClassResource;
 use App\Http\Resources\Country\CountryTaxDeductionClassResource;
@@ -18,22 +19,16 @@ class TaxTransactionRelationResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
             'description' => $this->description,
-            'value' => $this->value,
-            'applied_by' => $this->applied_by,
-            $this->mergeWhen($this->description == 'taxClass', [
-                'category' => new TaxClassResource($this->taxTransactionRelationable),
-            ]),
-            $this->mergeWhen($this->description == 'countryTaxDeductionClass', [
-                'category' => new CountryTaxDeductionClassResource($this->taxTransactionRelationable),
-            ]),
-            $this->mergeWhen($this->description == 'countryTaxReliefClass', [
-                'category' => new CountryTaxReliefClassResource($this->taxTransactionRelationable),
-            ]),
-            $this->mergeWhen($this->description == null , [
-                'category' => $this->taxTransactionRelationable ? $this->taxTransactionRelationable : null,
-            ]),
+            'applied_by'  => $this->applied_by,
+            'value'       => (float) $this->value,
+            'related'     => [
+                'type' => $this->tax_transaction_relationable_type
+                    ? class_basename($this->tax_transaction_relationable_type)
+                    : null,
+                'id'   => $this->tax_transaction_relationable_id,
+            ],
+            'created_at'  => optional($this->created_at)->toISOString(),
         ];
     }
 }

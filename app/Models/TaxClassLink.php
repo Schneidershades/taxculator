@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TaxClassLink extends Model
 {
+    use HasFactory;
+    protected $guarded = [];
     protected $casts = [
         'tax_version_id'   => 'integer',
         'tax_class_id'     => 'integer',

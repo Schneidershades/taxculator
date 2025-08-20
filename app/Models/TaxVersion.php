@@ -3,9 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TaxVersion extends Model
 {
+
+    use HasFactory;
+    protected $guarded = [];
+
     protected $casts = [
         'tax_jurisdiction_id' => 'integer',
         'tax_year'            => 'integer',

@@ -8,24 +8,25 @@ use App\Models\TaxReliefRule;
 use App\Models\TaxTransaction;
 use App\Models\TaxJurisdiction;
 use App\Models\TaxDeductionRule;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Database\Eloquent\Collection;
 
 class TaxTransactionService
 {
+    /**
+     * Persist a full tax transaction and return it with relations.
+     */
     public function register(array $p): TaxTransaction
     {
         return DB::transaction(function () use ($p) {
-            // Resolve jurisdictions
             $country = TaxJurisdiction::country($p['country_code'])->firstOrFail();
             $state   = !empty($p['state_code']) ? TaxJurisdiction::state($p['country_code'], $p['state_code'])->first() : null;
             $local   = (!empty($p['local_code']) && $state) ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first() : null;
 
-            // Find versions (country → state → local)
             $versions = collect([$country, $state, $local])->filter()
                 ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)->where('tax_year', $p['tax_year'])->first())
                 ->filter()
-                ->values(); // order preserved: country, state, local
+                ->values();
 
             if ($versions->isEmpty()) {
                 throw new \RuntimeException('No tax versions found for the given year/jurisdiction');
@@ -35,7 +36,7 @@ class TaxTransactionService
 
             // Preload classes & income map
             $classMap = TaxClass::query()->get()->keyBy('short_name');
-            $incomeMap = collect($p['taxClasses'])->map(fn($v) => (float)$v)->all();
+            $incomeMap = collect($p['classes'])->map(fn($v) => (float)$v)->all();
 
             // 1) Gross income & relations
             $gross = 0;
@@ -48,7 +49,7 @@ class TaxTransactionService
             $this->rel($tx, 'grossIncome', $gross, 'amount');
 
             // 2) Merge deduction rules across versions
-            $flags = $p['taxDeductions'] ?? [];
+            $flags = $p['deductions'] ?? [];
             $mergedDeductions = $this->mergeDeductions($versions, $flags);
 
             $deductTotal = 0;
@@ -96,6 +97,142 @@ class TaxTransactionService
         });
     }
 
+    /**
+     * Stateless preview: compute breakdown without saving anything.
+     * Returns an array matching the TaxTransactionResource "amounts/breakdown" shape.
+     */
+    public function preview(array $p): array
+    {
+        $country = TaxJurisdiction::country($p['country_code'])->firstOrFail();
+        $state   = !empty($p['state_code']) ? TaxJurisdiction::state($p['country_code'], $p['state_code'])->first() : null;
+        $local   = (!empty($p['local_code']) && $state) ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first() : null;
+
+        $versions = collect([$country, $state, $local])->filter()
+            ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)->where('tax_year', $p['tax_year'])->first())
+            ->filter()
+            ->values();
+
+        if ($versions->isEmpty()) {
+            throw new \RuntimeException('No tax versions found for the given year/jurisdiction');
+        }
+
+        $classMap  = TaxClass::query()->get()->keyBy('short_name');
+        $incomeMap = collect($p['classes'])->map(fn($v) => (float)$v)->all();
+
+        $breakdown = [
+            'classes'    => [],
+            'deductions' => [],
+            'reliefs'    => [],
+            'tariffs'    => [], // country/state/local bracket lines
+        ];
+
+        // classes & gross
+        $gross = 0;
+        foreach ($incomeMap as $short => $amt) {
+            if ($amt <= 0 || !isset($classMap[$short])) continue;
+            $gross += $amt;
+            $breakdown['classes'][] = [
+                'description' => 'taxClass',
+                'applied_by'  => 'amount',
+                'value'       => round($amt, 2),
+                'related'     => ['type' => 'TaxClass', 'id' => $classMap[$short]->id, 'short_name' => $short],
+            ];
+        }
+
+        // deductions
+        $flags = $p['deductions'] ?? [];
+        $mergedDeductions = $this->mergeDeductions($versions, $flags);
+
+        $deductTotal = 0;
+        foreach ($mergedDeductions as $mr) {
+            [$val, $appliedBy] = $this->evalDeduction($mr['rule'], $incomeMap);
+            if ($val > 0) {
+                $deductTotal += $val;
+                $breakdown['deductions'][] = [
+                    'description' => 'deduction',
+                    'applied_by'  => $appliedBy,
+                    'value'       => round($val, 2),
+                    'related'     => ['type' => 'TaxDeductionRule', 'id' => $mr['rule']->id, 'short_name' => $mr['rule']->deductionClass->short_name],
+                ];
+            }
+        }
+
+        // reliefs
+        $mergedReliefs = $this->mergeReliefs($versions);
+        $reliefTotal = 0;
+        foreach ($mergedReliefs as $mr) {
+            $val = $this->evalRelief($mr['rule'], $gross - $deductTotal);
+            if ($val > 0) {
+                $reliefTotal += $val;
+                $breakdown['reliefs'][] = [
+                    'description' => 'relief',
+                    'applied_by'  => $mr['rule']->relief_type,
+                    'value'       => round($val, 2),
+                    'related'     => ['type' => 'TaxReliefRule', 'id' => $mr['rule']->id, 'code' => $mr['rule']->reliefClass->code],
+                ];
+            }
+        }
+
+        $taxable = max(0, $gross - $deductTotal - $reliefTotal);
+
+        // tariffs per level
+        $countryTax = $stateTax = $localTax = 0.0;
+        foreach ($versions as $v) {
+            $component = 0.0;
+            $remainingBase = $taxable;
+
+            foreach ($v->tariffs()->orderBy('ordering')->get() as $b) {
+                if ($remainingBase <= 0) break;
+                $min = (float)$b->bracket_min;
+                $max = is_null($b->bracket_max) ? INF : (float)$b->bracket_max;
+                $span = max(0, min($remainingBase, $max - $min));
+                if ($span <= 0) continue;
+
+                $chunk = $b->rate_type === 'percentage'
+                    ? round($span * ((float)$b->rate_value / 100), 2)
+                    : round((float)$b->rate_value, 2);
+
+                $component += $chunk;
+                $breakdown['tariffs'][] = [
+                    'description' => 'taxedIncomeByTariff',
+                    'applied_by'  => $b->rate_type,
+                    'value'       => $chunk,
+                    'related'     => [
+                        'type' => 'TaxTariff',
+                        'id' => $b->id,
+                        'level' => $v->jurisdiction->level,
+                        'min' => (float)$b->bracket_min,
+                        'max' => $b->bracket_max,
+                        'rate' => (float)$b->rate_value,
+                    ],
+                ];
+
+                $remainingBase -= $span;
+            }
+
+            $level = $v->jurisdiction->level;
+            if ($level === 'country') $countryTax += $component;
+            if ($level === 'state')   $stateTax   += $component;
+            if ($level === 'local')   $localTax   += $component;
+        }
+
+        $amounts = [
+            'gross_income'   => round($gross, 2),
+            'taxable_income' => round($taxable, 2),
+            'country_tax'    => round($countryTax, 2),
+            'state_tax'      => round($stateTax, 2),
+            'local_tax'      => round($localTax, 2),
+            'total_tax'      => round($countryTax + $stateTax + $localTax, 2),
+        ];
+
+        return [
+            'amounts'   => $amounts,
+            'breakdown' => $breakdown,
+        ];
+    }
+
+    // ---------- internals ----------
+
     private function rel(TaxTransaction $tx, string $desc, float $value, string $appliedBy, $modelId = null, $modelType = null)
     {
         $tx->relations()->create([
@@ -107,13 +244,9 @@ class TaxTransactionService
         ]);
     }
 
-    // ---------- layering helpers ----------
-
     private function mergeDeductions(Collection $versions, array $flags): array
     {
-        // Country → State → Local; override beats lower levels for the same deduction class
-        // Result: array of ['rule' => TaxDeductionRule]
-        $picked = [];   // key by deduction_class_id
+        $picked = [];
         foreach ($versions as $v) {
             foreach ($v->deductionRules()->with('deductionClass')->get() as $r) {
                 $short = $r->deductionClass->short_name;
@@ -126,10 +259,9 @@ class TaxTransactionService
                     if ($r->combine_mode === 'override') {
                         $picked[$key] = ['rule' => $r];
                     } elseif ($picked[$key]['rule']->combine_mode === 'stack' && $r->combine_mode === 'stack') {
-                        // convert to a synthetic stacked rule (percentage stacks by summing values)
                         $picked[$key]['rule']->value += $r->value;
                     } else {
-                        $picked[$key] = ['rule' => $r]; // default to latter if modes mismatch
+                        $picked[$key] = ['rule' => $r];
                     }
                 }
             }
@@ -139,7 +271,6 @@ class TaxTransactionService
 
     private function mergeReliefs(Collection $versions): array
     {
-        // Similar approach keyed by relief_class_id
         $picked = [];
         foreach ($versions as $v) {
             foreach ($v->reliefRules()->with('reliefClass')->get() as $r) {

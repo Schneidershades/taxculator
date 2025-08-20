@@ -11,6 +11,8 @@ class TaxReliefClass extends Model
 {
     use HasFactory;
 
+    protected $guarded = [];
+
     public $oneItem = TaxReliefClassResource::class;
     public $allItems = TaxReliefClassCollection::class;
 

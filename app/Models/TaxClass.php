@@ -9,6 +9,7 @@ use App\Models\TaxTransactionRelation;
 class TaxClass extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
     public function links()
     {

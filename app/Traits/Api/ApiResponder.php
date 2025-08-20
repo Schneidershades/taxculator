@@ -2,132 +2,228 @@
 
 namespace App\Traits\Api;
 
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\Api\DiscoverResources;
 
 trait ApiResponder
 {
-    private function successResponse($data, $code)
+    use DiscoverResources;
+
+    /**
+     * Base success responder with JSON structure.
+     */
+    protected function respondSuccess(array $payload, int $code = 200)
     {
-        return response()->json($data, $code);
+        return Response::json(array_merge(['success' => true], $payload), $code);
     }
 
-    protected function errorResponse($message, $code)
+    /**
+     * Base error responder with JSON structure.
+     */
+    protected function respondError(string $message, int $code = 400)
     {
-        return response()->json(['data' => ['error' => $message, 'code' => $code]], $code);
+        return Response::json([
+            'success' => false,
+            'error'   => $message,
+        ], $code);
     }
 
-    protected function showAll(Collection $collection, $code = 200)
+    /**
+     * Display a list of models, filtered/sorted/paginated, wrapped in a ResourceCollection.
+     */
+    protected function showAll(Collection $collection, int $code = 200)
     {
+        // 1) Figure out the humanized model name
+        $first   = $collection->first();
+        $short   = $first ? class_basename(get_class($first)) : 'Item';
+        $label   = Str::of($short)->snake()->replace('_', ' ')->title();
+        $message = "{$label} list retrieved successfully.";
+
+        // 2) If empty, short‐circuit with an empty array
         if ($collection->isEmpty()) {
-            return $this->successResponse(['data' => $collection], $code);
+            return $this->respondSuccess([
+                'message' => $message,
+                'data'    => [],
+            ], $code);
         }
 
-        $transformer = $collection->first()->allItems;
+        // 3) Pick the ResourceCollection class
+        $transformerClass = $this->resolveResourceClass($short, true);
 
-        $collection = $this->filterData($collection, $transformer);
-        $collection = $this->sortData($collection, $transformer);
+        // 4) Run your pipeline on the *raw* collection
+        $collection = $this->filterData($collection,   $transformerClass);
+        $collection = $this->sortData($collection,     $transformerClass);
 
-        if(request()->per_page > 0){
-            $collection = $this->paginate($collection);                     
+        if ((int) request('per_page', 0) > 0) {
+            $collection = $this->paginate($collection);
         }
 
-        $collection = $this->transformData($collection, $transformer);
-        $collection = $this->cacheResponse($collection);
-        return $collection;
+        // 5) Transform *once* into your ResourceCollection
+        /** @var ResourceCollection $resource */
+        $resource = $this->transformData($collection, $transformerClass);
+
+        // 6) Optionally cache the resource
+        $resource = $this->cacheResponse($resource);
+
+        // 7) Attach message & return the JSON response
+        return $resource
+            ->additional(['message' => $message, 'success' => true])
+            ->response()
+            ->setStatusCode($code);
     }
 
-    protected function showOne(Model $instance, $code = 200)
+    /**
+     * Display a single model instance wrapped in its JsonResource.
+     * Auto-injects a creation or retrieval message based on HTTP code.
+     */
+    protected function showOne(Model $model, int $code = 200)
     {
-        $transformer = $instance->oneItem;
-        $instance = $this->transformData($instance, $transformer);
-        return $instance;
+        $short   = class_basename(get_class($model));
+        $label   = Str::of($short)->snake()->replace('_', ' ')->title();
+        $message = $code === 201
+            ? "{$label} created successfully."
+            : "{$label} retrieved successfully.";
+
+        $transformerClass = $this->resolveResourceClass($short, false);
+        $resource         = new $transformerClass($model);
+
+        return $resource
+            ->additional(['message' => $message, 'success' => true])
+            ->response()
+            ->setStatusCode($code);
     }
 
-    protected function AuthErrorResponse($message, $code)
+    /**
+     * Shortcut for message-only responses (no data payload).
+     */
+    protected function showMessage($message, int $code = 200)
     {
-        return response()->json(['errors' => ['root' => $message]], $code);
+
+        return $this->respondSuccess([
+            'message' => $message,
+            'success' => true,
+        ], $code);
     }
 
-    protected function AuthSuccessResponse(Model $model, $token, $code = 200)
+    /**
+     * Authentication-specific success response with token.
+     */
+    protected function authSuccess(Model $model, string $token, int $code = 200)
     {
-        return response()->json(['data' => $model, 'meta' => ['token' => $token]], $code);
+        return $this->respondSuccess([
+            'data' => $model,
+            'meta' => ['token' => $token],
+        ], $code);
     }
 
-    protected function showMessage($message, $code = 200)
+    /**
+     * Authentication-specific error response.
+     */
+    protected function authError(string $message, int $code = 401)
     {
-        return $this->successResponse(['data' => ['message' => $message]], $code);
+        return $this->respondError($message, $code);
     }
 
-    protected function respondWithToken($token)
+    protected function showDeleted(Model $model, int $code = 200)
     {
-        return response()->json([
-            'token' => $token,
-            'token_type' => 'bearer',
-            // 'expires_in' => auth('api')->factory()->getTTL() * 60
-        ]);
+        $short = class_basename(get_class($model));
+        $label = Str::of($short)
+            ->snake()
+            ->replace('_', ' ')     // “lead stage”
+            ->title();
+
+        $message = "{$label} deleted successfully.";
+
+        return $this->respondSuccess([
+            'message' => $message,
+        ], $code);
     }
 
-    protected function filterData(Collection $collection, $transformer)
+    protected function showUpdated(Model $model, int $code = 200)
     {
-        foreach (request()->query as $query => $value) {
-            $attribute = $transformer::originalAttribute($query);
+        $short = class_basename(get_class($model));
+        $label = Str::of($short)->snake()->replace('_', ' ')->title();
+        $message = "{$label} updated successfully.";
 
-            if (isset($attribute, $value)) {
-                $collection = $collection->where($attribute, $value);
+        return $this->respondSuccess([
+            'message' => $message,
+        ], $code);
+    }
+
+    /**
+     * Filter collection by query parameters via transformer mapping.
+     */
+    protected function filterData(Collection $collection, string $transformerClass): Collection
+    {
+        foreach (request()->query() as $param => $value) {
+            $attr = $transformerClass::originalAttribute($param);
+            if ($attr !== null) {
+                $collection = $collection->where($attr, $value);
             }
         }
-
         return $collection;
     }
 
-    protected function sortData(Collection $collection, $transformer)
+    /**
+     * Sort collection by query parameters via transformer mapping.
+     */
+    protected function sortData(Collection $collection, string $transformerClass): Collection
     {
-        if (request()->has('sort_by')) {
-            $attribute = $transformer::originalAttribute(request()->sort_by);
-
-            $collection = $collection->sortBy->{$attribute};
+        if ($asc = request('sort_by_asc')) {
+            $attr = $transformerClass::originalAttribute($asc);
+            if ($attr) {
+                $collection = $collection->sortBy($attr);
+            }
+        }
+        if ($desc = request('sort_by_desc')) {
+            $attr = $transformerClass::originalAttribute($desc);
+            if ($attr) {
+                $collection = $collection->sortByDesc($attr);
+            }
         }
         return $collection;
     }
 
-    protected function paginate(Collection $collection)
+    /**
+     * Paginate a Collection into LengthAwarePaginator.
+     */
+    protected function paginate(Collection $collection): LengthAwarePaginator
     {
-        $page = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = (int) request('per_page', 15);
+        $page    = LengthAwarePaginator::resolveCurrentPage();
+        $slice   = $collection->slice(($page - 1) * $perPage, $perPage)->values();
 
-        $perPage = 15;
-
-        if (request()->has('per_page')) {
-            $perPage = (int) request()->per_page;
-        }
-
-        $result = $collection->slice(($page - 1) * $perPage, $perPage)->values();
-
-        $paginated = new LengthAwarePaginator($result, $collection->count(), $perPage, $page, [
-            'path' => LengthAwarePaginator::resolveCurrentPath(),
-        ]);
-
-        $paginated->appends(request()->all());
-
-        return $paginated;
+        return new LengthAwarePaginator(
+            $slice,
+            $collection->count(),
+            $perPage,
+            $page,
+            ['path' => LengthAwarePaginator::resolveCurrentPath()]
+        );
     }
 
-    protected function transformData($data, $transformer)
+    /**
+     * Transform data via the given Resource or Collection.
+     */
+    protected function transformData($data, string $transformerClass)
     {
-        return new $transformer($data);
+        return new $transformerClass($data);
     }
 
+    /**
+     * Cache the final response for 30 seconds based on full URL + sorted query.
+     */
     protected function cacheResponse($data)
     {
-        $url = request()->url();
-        $queryParams = request()->query();
-        ksort($queryParams);
-        $queryString = http_build_query($queryParams);
-        $fullUrl = "{$url}?{$queryString}";
-        return Cache::remember($fullUrl, 30/60, function () use ($data) {
-            return $data;
-        });
+        $query = request()->query();
+        ksort($query);
+        $key = request()->url() . '?' . http_build_query($query);
+
+        return Cache::remember($key, 30, fn() => $data);
     }
 }
