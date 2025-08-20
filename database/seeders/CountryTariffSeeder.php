@@ -6,7 +6,7 @@ use App\Models\TaxTariff;
 use App\Models\TaxVersion;
 use App\Models\TaxJurisdiction;
 use Illuminate\Database\Seeder;
-use App\Models\CountryTaxTarrif;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class CountryTariffSeeder extends Seeder
 {

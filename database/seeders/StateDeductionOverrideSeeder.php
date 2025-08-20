@@ -21,7 +21,6 @@ class StateDeductionOverrideSeeder extends Seeder
 
         $nhf = TaxDeductionClass::where('short_name', 'nhf')->firstOrFail();
 
-        // Example: Lagos sets NHF to 2.0% (OVERRIDE)
         $r = TaxDeductionRule::updateOrCreate(
             ['tax_version_id' => $vState->id, 'tax_deduction_class_id' => $nhf->id],
             ['deduction_type' => 'percentage', 'value' => 2.0, 'combine_mode' => 'override']

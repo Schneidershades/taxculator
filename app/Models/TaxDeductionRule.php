@@ -17,10 +17,12 @@ class TaxDeductionRule extends Model
     {
         return $this->belongsTo(TaxVersion::class);
     }
+
     public function deductionClass()
     {
         return $this->belongsTo(TaxDeductionClass::class, 'tax_deduction_class_id');
     }
+
     public function baseClasses()
     {
         return $this->belongsToMany(TaxClass::class, 'tax_deduction_rule_tax_classes');

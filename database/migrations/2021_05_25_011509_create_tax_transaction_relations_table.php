@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTaxTransactionRelativesTable extends Migration
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -15,12 +15,10 @@ class CreateTaxTransactionRelativesTable extends Migration
     {
         Schema::create('tax_transaction_relations', function (Blueprint $table) {
             $table->id();
-
             $table->foreignId('tax_transaction_id')->nullable()->constrained();
             $table->integer('tax_transaction_relationable_id')->nullable();
             $table->string('tax_transaction_relationable_type')->nullable();
             $table->string('description')->nullable();
-            $table->string('value')->nullable();
             $table->string('applied_by')->nullable();
             $table->string('value_type')->default('amount'); // 'amount', 'percentage', 'meta'
             $table->decimal('value', 18, 2)->nullable();
@@ -39,4 +37,4 @@ class CreateTaxTransactionRelativesTable extends Migration
     {
         Schema::dropIfExists('tax_transaction_relations');
     }
-}
+};
