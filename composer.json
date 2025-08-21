@@ -13,6 +13,7 @@
         "bacon/bacon-qr-code": "^3.0",
         "barryvdh/laravel-dompdf": "^3.1",
         "crazybooot/base64-validation": "^1.0",
+        "filament/filament": "^4.0",
         "flutterwavedev/flutterwave-v3": "^1.1",
         "ichtrojan/laravel-otp": "^2.0",
         "knuckleswtf/scribe": "^5.2",

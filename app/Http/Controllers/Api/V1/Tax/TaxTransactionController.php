@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1\Tax;
 
+use App\Models\TaxTransaction;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;
 use App\Services\Tax\TaxTransactionService;
+use App\Http\Requests\Tax\TaxTransactionCreateFormRequest;
 
 class TaxTransactionController extends Controller
 {
@@ -12,5 +13,11 @@ class TaxTransactionController extends Controller
     {
         $tx = app(TaxTransactionService::class)->register($request->validated());
         return $this->showOne($tx->load('relations'));
+    }
+
+    public function show(int $id)
+    {
+        $tx = TaxTransaction::with('relations')->findOrFail($id);
+        return $this->showOne($tx);
     }
 }

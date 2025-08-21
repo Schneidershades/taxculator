@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Http\Resources\Tax\TaxVersionResource;
+use App\Http\Resources\Tax\TaxVersionCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TaxVersion extends Model
@@ -10,6 +12,9 @@ class TaxVersion extends Model
 
     use HasFactory;
     protected $guarded = [];
+
+    public $oneItem = TaxVersionResource::class;
+    public $allItems = TaxVersionCollection::class;
 
     protected $casts = [
         'tax_jurisdiction_id' => 'integer',

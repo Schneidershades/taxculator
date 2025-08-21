@@ -3,9 +3,10 @@
 namespace App\Http\Resources\Tax;
 
 use Illuminate\Http\Request;
+use App\Http\Resources\Tax\TaxTariffResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class TaxClassCollection extends ResourceCollection
+class TaxTariffCollection extends ResourceCollection
 {
     public function toArray(Request $request): array
     {

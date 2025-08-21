@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\TaxVersion;
 use Illuminate\Database\Eloquent\Model;
+use App\Http\Resources\Tax\TaxJurisdictionResource;
+use App\Http\Resources\Tax\TaxJurisdictionCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class TaxJurisdiction extends Model
 {
     use HasFactory;
     protected $guarded = [];
+
+
+    public $oneItem = TaxJurisdictionResource::class;
+    public $allItems = TaxJurisdictionCollection::class;
 
     public function parent()
     {

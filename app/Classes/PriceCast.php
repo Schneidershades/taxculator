@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Casts;
+namespace App\Classes;
 
 use App\Services\Currency\CountryCurrencyMap;
 use App\Services\Currency\CurrencyService;
