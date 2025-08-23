@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+uses()->beforeEach(fn() => $this->withoutExceptionHandling());
 beforeEach(function () {
     $this->seed(TaxBootstrapSeeder::class);
     TaxVersion::query()->update(['status' => TaxVersion::STATUS_PUBLISHED]);
@@ -34,7 +35,8 @@ test('credits reduce net tax due and decrement remaining balance', function () {
     expect($res['amounts'])->toHaveKeys(['total_tax', 'credits_applied', 'net_tax_due']);
 
     expect(is_numeric($res['amounts']['credits_applied']))->toBeTrue();
-    expect((float) $res['amounts']['credits_applied'])->toBeGreaterThan(0);
+
+    expect((float) $res['amounts']['credits_applied'])->toBeGreaterThan(0.0);
 
     expect($res['amounts']['net_tax_due'])
         ->toEqualWithDelta(

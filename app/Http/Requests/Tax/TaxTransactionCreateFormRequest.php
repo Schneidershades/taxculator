@@ -42,6 +42,10 @@ class TaxTransactionCreateFormRequest extends FormRequest
         $deductions = is_array($deductions) ? $deductions : [];
 
         $this->merge(compact('classes', 'deductions'));
+
+        if ($this->filled('beneficiary_id')) {
+            $this->merge(['beneficiary_id' => (int) $this->input('beneficiary_id')]);
+        }
     }
 
     public function rules(): array
@@ -59,7 +63,7 @@ class TaxTransactionCreateFormRequest extends FormRequest
             'deductions.*' => ['boolean'],
 
             'currency_code' => ['nullable', 'string', 'size:3'],
-            'beneficiary_id' => ['nullable', 'integer', 'min:1'],
+            'beneficiary_id' => ['nullable', 'integer'],
         ];
     }
 

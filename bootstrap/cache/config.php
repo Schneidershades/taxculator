@@ -1078,6 +1078,8 @@ You can switch the language used with the tabs at the top right (or from the nav
     'force_ddp_countries' => 
     array (
     ),
+    'cache_enabled' => true,
+    'cache_ttl' => 86400,
   ),
   'view' => 
   array (

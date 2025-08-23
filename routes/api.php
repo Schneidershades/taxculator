@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\Vat\VatController;
 use App\Http\Controllers\Api\V1\Country\CountryController;
 use App\Http\Controllers\Api\V1\Tax\TaxMetadataController;
 use App\Http\Controllers\Api\V1\Tax\TaxCalculationController;
@@ -18,14 +19,19 @@ Route::prefix('v1')->group(function () {
 		Route::get('tax-transactions/{id}/statement.pdf', [TaxTransactionController::class, 'statementPdf']);
 	});
 
-	Route::prefix('cit')->group(function () {
-		Route::post('calculate', [\App\Http\Controllers\Api\V1\Cit\CorporateTaxController::class, 'preview']);
-		Route::post('transactions', [\App\Http\Controllers\Api\V1\Cit\CorporateTaxController::class, 'store']);
+	// Route::prefix('cit')->group(function () {
+	// });
+
+	Route::middleware('throttle:tax-calc')->group(function () {
+		Route::prefix('cit')->group(function () {
+			Route::post('calculate', [\App\Http\Controllers\Api\V1\Cit\CorporateTaxController::class, 'preview']);
+			Route::post('transactions', [\App\Http\Controllers\Api\V1\Cit\CorporateTaxController::class, 'store']);
+		});
 	});
 
 	Route::prefix('vat')->group(function () {
-		Route::post('invoices', [\App\Http\Controllers\Api\V1\Vat\VatController::class, 'createInvoice']);
-		Route::get('returns/preview', [\App\Http\Controllers\Api\V1\Vat\VatController::class, 'previewReturn']);
-		Route::post('returns', [\App\Http\Controllers\Api\V1\Vat\VatController::class, 'fileReturn']);
+		Route::post('invoices', [VatController::class, 'createInvoice']);
+		Route::get('returns/preview', [VatController::class, 'previewReturn']);
+		Route::post('returns', [VatController::class, 'fileReturn']);
 	});
 });

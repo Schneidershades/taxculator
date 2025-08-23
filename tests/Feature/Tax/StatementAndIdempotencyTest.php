@@ -8,16 +8,6 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(TestCase::class, RefreshDatabase::class);
 
-// beforeEach(function () {
-//     $this->seed(TaxBootstrapSeeder::class);
-// });
-
-
-// beforeEach(function () {
-//     $this->seed(TaxBootstrapSeeder::class); // your bootstrap seeder
-//     TaxVersion::query()->update(['status' => TaxVersion::STATUS_PUBLISHED]);
-// });
-
 beforeEach(function () {
     $this->artisan('db:seed', [
         '--class' => TaxBootstrapSeeder::class,

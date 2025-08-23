@@ -16,4 +16,7 @@ return [
     'force_ddp_countries' => [
         // 'NG', // uncomment if you WANT to collect Nigeria import VAT yourself
     ],
+
+    'cache_enabled' => env('TAX_CACHE_ENABLED', true),
+    'cache_ttl'     => (int) env('TAX_CACHE_TTL', 86400), // 1 day
 ];

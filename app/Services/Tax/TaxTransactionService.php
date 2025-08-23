@@ -5,15 +5,17 @@ namespace App\Services\Tax;
 use App\Models\TaxClass;
 use App\Models\TaxVersion;
 use App\Models\TaxReliefRule;
+use App\Support\TaxRuleCache;
 use App\Models\TaxTransaction;
 use App\Models\TaxJurisdiction;
+use App\Models\ContributionRule;
 use App\Models\TaxDeductionRule;
-use App\Services\Tax\RuleSnapshotBuilder;
-use App\Services\Tax\StatementBuilder;
+use App\Models\WithholdingCredit;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use App\Models\WithholdingCredit;
-use App\Models\ContributionRule;
+use Illuminate\Support\Facades\Auth;
+use App\Services\Tax\StatementBuilder;
+use App\Services\Tax\RuleSnapshotBuilder;
 
 class TaxTransactionService
 {
@@ -39,7 +41,14 @@ class TaxTransactionService
                 throw new \RuntimeException('No tax versions found for the given year/jurisdiction');
             }
 
-            $tx = TaxTransaction::create([]);
+            $bundles = $versions->map(fn($v) => TaxRuleCache::pitBundle($v->id))->all();
+
+            $userId = $p['user_id'] ?? Auth::id();
+
+            $tx = TaxTransaction::create([
+                'user_id'         => $userId,
+                'idempotency_key' => $p['idempotency_key'] ?? null,
+            ]);
 
             // Preload classes & income map
             $classMap = TaxClass::query()->get()->keyBy('short_name');
@@ -89,16 +98,16 @@ class TaxTransactionService
 
             // 5) Tariffs per version level (country/state/local)
             $totalTax = 0;
-            foreach ($versions as $v) {
-                $component = $this->applyTariffs($v->tariffs()->orderBy('ordering')->get(), $taxable, $tx);
+            foreach ($bundles as $b) {
+                $component = $this->applyTariffsArray($b['tariffs'], $taxable, $tx);
                 if ($component > 0) {
-                    $label = match ($v->jurisdiction->level) {
+                    $label = match ($b['level']) {
                         'country' => 'countryTax',
                         'state'   => 'stateTax',
                         'local'   => 'localTax',
                     };
                     $totalTax += $component;
-                    $this->rel($tx, $label, $component, 'amount', $v->id, TaxVersion::class);
+                    $this->rel($tx, $label, $component, 'amount', $b['version_id'], TaxVersion::class);
                 }
             }
 
@@ -118,27 +127,22 @@ class TaxTransactionService
                 }
             }
 
-            // ---- Payroll contributions (employee/employer) ----
-            $mergedContribs = $this->mergeContributionRules($versions);
+            $mergedContribs = $this->mergeContributionsFromBundles($bundles);
 
             $employeeTotal = 0.0;
             $employerTotal = 0.0;
 
-            foreach ($mergedContribs as $mc) {
-                /** @var ContributionRule $rule */
-                $rule = $mc['rule'];
-                [$emp, $er, $appliedBy, $base] = $this->evalContribution($rule, $incomeMap);
-
+            foreach ($mergedContribs as $rc) {
+                [$emp, $er, $appliedBy, $base, $name] = $this->evalContributionFromBundle($rc, $incomeMap);
                 if ($emp > 0) {
                     $employeeTotal += $emp;
-                    $this->rel($tx, 'employeeContribution', $emp, $appliedBy, $rule->id, ContributionRule::class);
+                    $this->rel($tx, 'employeeContribution', $emp, $appliedBy, null, null);
                 }
                 if ($er > 0) {
                     $employerTotal += $er;
-                    $this->rel($tx, 'employerContribution', $er, $appliedBy, $rule->id, ContributionRule::class);
+                    $this->rel($tx, 'employerContribution', $er, $appliedBy, null, null);
                 }
             }
-
             $this->rel($tx, 'employeeContributionTotal', round($employeeTotal, 2), 'amount');
             $this->rel($tx, 'employerContributionTotal', round($employerTotal, 2), 'amount');
 
@@ -328,6 +332,7 @@ class TaxTransactionService
     {
         $picked = [];
         foreach ($versions as $v) {
+
             foreach ($v->deductionRules()->with('deductionClass')->get() as $r) {
                 $short = $r->deductionClass->short_name;
                 if (!($flags[$short] ?? false)) continue;
@@ -512,5 +517,148 @@ class TaxTransactionService
         if (!is_null($r->employer_cap)) $er  = min($er,  (float) $r->employer_cap);
 
         return [round($emp, 2), round($er, 2), $appliedBy, $base];
+    }
+
+    private function mergeDeductionsFromBundles($bundles, array $flags): array
+    {
+        $picked = [];
+        foreach ($bundles as $b) {
+            foreach ($b['deductions'] as $r) {
+                $short = $r['short'];
+                if (!($flags[$short] ?? false)) continue;
+                $key = $short; // per logical deduction type
+                if (!isset($picked[$key])) {
+                    $picked[$key] = $r;
+                } else {
+                    if (($r['combine_mode'] ?? 'stack') === 'override') {
+                        $picked[$key] = $r;
+                    } elseif (($picked[$key]['combine_mode'] ?? 'stack') === 'stack' && ($r['combine_mode'] ?? 'stack') === 'stack') {
+                        $picked[$key]['value'] += $r['value'];
+                    } else {
+                        $picked[$key] = $r;
+                    }
+                }
+            }
+        }
+        // unify to objects your existing eval uses
+        return array_map(function ($r) {
+            return ['rule' => (object)[
+                'id' => $r['id'],
+                'deduction_type' => $r['type'],
+                'value' => $r['value'],
+                'combine_mode' => $r['combine_mode'],
+                'baseClasses' => collect($r['base_shorts']),
+                'deductionClass' => (object)['short_name' => $r['short']],
+            ]];
+        }, array_values($picked));
+    }
+
+    private function mergeReliefsFromBundles($bundles): array
+    {
+        $picked = [];
+        foreach ($bundles as $b) {
+            foreach ($b['reliefs'] as $r) {
+                $key = $r['code'] ?? $r['id'];
+                if (!isset($picked[$key])) {
+                    $picked[$key] = $r;
+                } else {
+                    if (($r['combine_mode'] ?? 'stack') === 'override') {
+                        $picked[$key] = $r;
+                    } elseif (($picked[$key]['combine_mode'] ?? 'stack') === 'stack' && ($r['combine_mode'] ?? 'stack') === 'stack') {
+                        $picked[$key]['value'] += $r['value'];
+                    } else {
+                        $picked[$key] = $r;
+                    }
+                }
+            }
+        }
+
+        return array_map(function ($r) {
+            return ['rule' => (object)[
+                'id' => $r['id'],
+                'relief_type' => $r['relief_type'],
+                'value' => $r['value'],
+                'minimum_amount' => $r['minimum_amount'],
+                'maximum_amount' => $r['maximum_amount'],
+                'minimum_status' => $r['minimum_status'],
+                'maximum_status' => $r['maximum_status'],
+                'combine_mode' => $r['combine_mode'],
+                'reliefClass' => (object)['code' => $r['code']],
+            ]];
+        }, array_values($picked));
+    }
+
+    private function applyTariffsArray(array $tariffs, float $taxable, TaxTransaction $tx): float
+    {
+        $remaining = $taxable;
+        $total = 0.0;
+        foreach ($tariffs as $b) {
+            if ($remaining <= 0) break;
+            $min = (float)$b['min'];
+            $max = is_null($b['max']) ? INF : (float)$b['max'];
+            $span = max(0, min($remaining, $max - $min));
+            if ($span <= 0) continue;
+
+            $chunk = $b['rate_type'] === 'percentage'
+                ? round($span * ($b['rate_value'] / 100), 2)
+                : round($b['rate_value'], 2);
+
+            $total += $chunk;
+            $this->rel($tx, 'taxedIncomeByTariff', $chunk, $b['rate_type']);
+            $remaining -= $span;
+        }
+        return $total;
+    }
+
+    private function mergeContributionsFromBundles(array $bundles): array
+    {
+        $picked = [];
+        foreach ($bundles as $b) {
+            foreach ($b['contributions'] as $r) {
+                $key = $r['name'];
+                if (!isset($picked[$key])) {
+                    $picked[$key] = $r;
+                } else {
+                    if (($r['combine_mode'] ?? 'stack') === 'override') {
+                        $picked[$key] = $r;
+                    } elseif (($picked[$key]['combine_mode'] ?? 'stack') === 'stack' && ($r['combine_mode'] ?? 'stack') === 'stack') {
+                        $picked[$key]['employee_rate'] = (float)($picked[$key]['employee_rate'] ?? 0) + (float)($r['employee_rate'] ?? 0);
+                        $picked[$key]['employer_rate'] = (float)($picked[$key]['employer_rate'] ?? 0) + (float)($r['employer_rate'] ?? 0);
+                    } else {
+                        $picked[$key] = $r;
+                    }
+                }
+            }
+        }
+        return array_values($picked);
+    }
+
+    private function evalContributionFromBundle(array $r, array $incomeMap): array
+    {
+        $base = 0.0;
+        if (($r['base_type'] ?? 'gross') === 'gross') {
+            $base = (float) collect($incomeMap)->sum();
+        } else {
+            $base = (float) collect($incomeMap)->only($r['base_shorts'] ?? [])->sum();
+        }
+
+        $appliedBy = $r['rate_type'] ?? 'percentage';
+
+        if ($appliedBy === 'amount') {
+            $emp = (float) ($r['employee_rate'] ?? 0);
+            $er  = (float) ($r['employer_rate'] ?? 0);
+        } else {
+            $emp = $base * ((float)($r['employee_rate'] ?? 0) / 100);
+            $er  = $base * ((float)($r['employer_rate'] ?? 0) / 100);
+        }
+
+        // floors/caps
+        if (isset($r['employee_floor'])) $emp = max($emp, (float)$r['employee_floor']);
+        if (isset($r['employer_floor'])) $er  = max($er,  (float)$r['employer_floor']);
+
+        if (isset($r['employee_cap'])) $emp = min($emp, (float)$r['employee_cap']);
+        if (isset($r['employer_cap'])) $er  = min($er,  (float)$r['employer_cap']);
+
+        return [round($emp, 2), round($er, 2), $appliedBy, $base, $r['name']];
     }
 }
