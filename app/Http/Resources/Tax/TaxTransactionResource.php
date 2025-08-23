@@ -33,6 +33,19 @@ class TaxTransactionResource extends JsonResource
         $totalTax   = (float) optional($rels->firstWhere('description', 'totalTax'))->value
             ?: ($countryTax + $stateTax + $localTax);
 
+        $credits = $rels->where('description', 'withholdingCreditApplied');
+
+        $creditsApplied = (float) $credits->sum('value');
+        $netTaxDue = (float) optional($rels->firstWhere('description', 'netTaxDue'))->value
+            ?: max(0, $totalTax - $creditsApplied);
+
+        $empContribs = $rels->where('description', 'employeeContribution');
+        $erContribs  = $rels->where('description', 'employerContribution');
+        $employeeContrib = (float) $empContribs->sum('value');
+        $employerContrib = (float) $erContribs->sum('value');
+
+
+
         return [
             'id'         => $this->id,
             'identifier' => $this->identifier,
@@ -45,6 +58,11 @@ class TaxTransactionResource extends JsonResource
                 'state_tax'      => $stateTax,
                 'local_tax'      => $localTax,
                 'total_tax'      => $totalTax,
+                'credits_applied'  => $creditsApplied, // NEW
+                'net_tax_due'      => $netTaxDue,      // NEW
+                'employee_contrib' => $employeeContrib,
+                'employer_contrib' => $employerContrib,
+
             ],
 
             'breakdown' => [
@@ -52,6 +70,10 @@ class TaxTransactionResource extends JsonResource
                 'deductions' => TaxTransactionRelationResource::collection($deductions),
                 'reliefs'    => TaxTransactionRelationResource::collection($reliefs),
                 'tariffs'    => TaxTransactionRelationResource::collection($tariffs),
+                'credits'    => TaxTransactionRelationResource::collection($credits),
+                'employee_contributions' => TaxTransactionRelationResource::collection($empContribs),
+                'employer_contributions' => TaxTransactionRelationResource::collection($erContribs),
+
             ],
 
             'created_at' => optional($this->created_at)->toISOString(),

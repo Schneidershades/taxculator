@@ -17,10 +17,11 @@ return new class extends Migration
             $table->decimal('bracket_min', 18, 2)->default(0);
             $table->decimal('bracket_max', 18, 2)->nullable(); // null = no upper cap
             $table->enum('rate_type', ['percentage', 'amount']);
-            $table->decimal('rate_value', 9, 4)->default(0);   // e.g., 7.0000 (%), or flat
+            $table->decimal('rate_value', 18, 4)->default(0);   // e.g., 7.0000 (%), or flat
             $table->unsignedInteger('ordering')->default(0);
             $table->timestamps();
-            $table->index(['tax_version_id', 'ordering']);
+            $table->unique(['tax_version_id', 'ordering'], 'u_tariffs_version_order');
+            $table->index('tax_version_id');
         });
     }
 

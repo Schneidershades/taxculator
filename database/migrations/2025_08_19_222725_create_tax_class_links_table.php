@@ -16,8 +16,10 @@ return new class extends Migration
             $table->foreignId('tax_version_id')->constrained();
             $table->foreignId('tax_class_id')->constrained();
             $table->boolean('require_deduction')->default(false);
-            $table->unique(['tax_version_id', 'tax_class_id']);
             $table->timestamps();
+            $table->unique(['tax_version_id', 'tax_class_id'], 'u_classlinks_version_class');
+            $table->index('tax_version_id');
+            $table->index('tax_class_id');
         });
     }
 

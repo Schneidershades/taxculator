@@ -18,8 +18,11 @@ return new class extends Migration
             $table->enum('deduction_type', ['amount', 'percentage']);
             $table->decimal('value', 18, 4)->default(0);
             $table->enum('combine_mode', ['stack', 'override'])->default('stack');
-            $table->unique(['tax_version_id', 'tax_deduction_class_id']);
             $table->timestamps();
+
+            $table->unique(['tax_version_id', 'tax_deduction_class_id'], 'u_deductions_version_class');
+            $table->index('tax_version_id');
+            $table->index('tax_deduction_class_id');
         });
     }
 

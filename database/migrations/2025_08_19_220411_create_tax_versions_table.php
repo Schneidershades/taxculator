@@ -17,8 +17,12 @@ return new class extends Migration
             $table->year('tax_year')->index();                 // e.g., 2025
             $table->date('effective_from');                    // 2025-01-01
             $table->date('effective_to')->nullable();          // null = open-ended
-            $table->unique(['tax_jurisdiction_id', 'tax_year']);
+            $table->string('status')->default('published')->index(); // draft|published|frozen|archived
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('frozen_at')->nullable();
             $table->timestamps();
+            $table->unique(['tax_jurisdiction_id', 'tax_year'], 'u_versions_jur_year');
+            $table->index('tax_jurisdiction_id');
         });
     }
 

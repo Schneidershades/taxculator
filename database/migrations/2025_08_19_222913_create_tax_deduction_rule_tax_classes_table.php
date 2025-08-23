@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('tax_deduction_rule_id')->constrained();
             $table->foreignId('tax_class_id')->constrained();
-            $table->unique(['tax_deduction_rule_id', 'tax_class_id']);
             $table->timestamps();
+            $table->unique(['tax_deduction_rule_id', 'tax_class_id'], 'u_rule_baseclass');
         });
     }
 

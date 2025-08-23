@@ -13,19 +13,23 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call(CountriesSeeder::class);
-        $this->call(TaxClassSeeder::class);
-        $this->call(TaxJurisdictionSeeder::class);
-        $this->call(TaxDeductionClassSeeder::class);
-        $this->call(TaxReliefClassSeeder::class);
-        $this->call(TaxClassLinkSeeder::class);
-        $this->call(TaxRateSeeder::class);
-        $this->call(TaxReliefRuleSeeder::class);
-        $this->call(TaxVersionSeeder::class);
-        $this->call(TaxDeductionRuleSeeder::class);
-        $this->call(CountryTariffSeeder::class);
-        $this->call(StateTariffSeeder::class);
-        $this->call(LocalTariffSeeder::class);
-        $this->call(StateDeductionOverrideSeeder::class);
+        $this->call([
+            CountriesSeeder::class,
+            TaxClassSeeder::class,
+            TaxJurisdictionSeeder::class,
+            TaxDeductionClassSeeder::class,
+            TaxReliefClassSeeder::class,
+            TaxClassLinkSeeder::class,
+            TaxRateSeeder::class,
+            TaxReliefRuleSeeder::class,
+            TaxVersionSeeder::class,
+            TaxDeductionRuleSeeder::class,
+            CountryTariffSeeder::class,
+            StateTariffSeeder::class,
+            LocalTariffSeeder::class,
+            StateDeductionOverrideSeeder::class,
+            VatDemoSeeder::class,
+            TaxBootstrapSeeder::class,
+        ]);
     }
 }

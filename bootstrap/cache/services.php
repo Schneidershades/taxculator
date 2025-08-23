@@ -53,6 +53,7 @@
     49 => 'Rap2hpoutre\\LaravelLogViewer\\LaravelLogViewerServiceProvider',
     50 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     51 => 'App\\Providers\\AppServiceProvider',
+    52 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'eager' => 
   array (
@@ -93,6 +94,7 @@
     34 => 'Rap2hpoutre\\LaravelLogViewer\\LaravelLogViewerServiceProvider',
     35 => 'RyanChandler\\BladeCaptureDirective\\BladeCaptureDirectiveServiceProvider',
     36 => 'App\\Providers\\AppServiceProvider',
+    37 => 'App\\Providers\\Filament\\AdminPanelProvider',
   ),
   'deferred' => 
   array (

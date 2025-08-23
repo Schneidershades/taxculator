@@ -18,6 +18,19 @@ class TaxTransaction extends Model
 
     protected $casts = [
         'user_id' => 'integer',
+        'input_snapshot'    => 'array',
+        'versions_snapshot' => 'array',
+        'statement'         => 'array',
+    ];
+
+    protected $fillable = [
+        'identifier',
+        'user_id',
+        'input_snapshot',
+        'versions_snapshot',
+        'rules_hash',
+        'statement',
+        'idempotency_key',
     ];
 
     public function relations()

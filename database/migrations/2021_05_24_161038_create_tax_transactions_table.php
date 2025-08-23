@@ -17,6 +17,11 @@ return new class extends Migration
             $table->id();
             $table->string('identifier')->nullable();
             $table->foreignId('user_id')->nullable()->constrained();
+            $table->string('idempotency_key', 80)->nullable()->unique();
+            $table->json('input_snapshot')->nullable();
+            $table->json('versions_snapshot')->nullable();
+            $table->string('rules_hash', 64)->nullable(); // sha256
+            $table->json('statement')->nullable();
             $table->timestamps();
         });
     }

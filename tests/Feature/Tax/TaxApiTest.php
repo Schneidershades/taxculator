@@ -50,7 +50,7 @@ test('POST /api/v1/tax/transactions persists and returns resource', function () 
     ];
 
     $this->postJson('/api/v1/tax/tax-transactions', $payload)
-        ->assertStatus(200) // showOne returns 200
+        ->assertStatus(201) // showOne returns 200
         ->assertJsonPath('success', true)
         ->assertJsonStructure([
             'success',

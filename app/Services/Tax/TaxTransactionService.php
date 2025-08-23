@@ -8,8 +8,12 @@ use App\Models\TaxReliefRule;
 use App\Models\TaxTransaction;
 use App\Models\TaxJurisdiction;
 use App\Models\TaxDeductionRule;
+use App\Services\Tax\RuleSnapshotBuilder;
+use App\Services\Tax\StatementBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use App\Models\WithholdingCredit;
+use App\Models\ContributionRule;
 
 class TaxTransactionService
 {
@@ -24,7 +28,10 @@ class TaxTransactionService
             $local   = (!empty($p['local_code']) && $state) ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first() : null;
 
             $versions = collect([$country, $state, $local])->filter()
-                ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)->where('tax_year', $p['tax_year'])->first())
+                ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)
+                    ->where('tax_year', $p['tax_year'])
+                    ->active()
+                    ->first())
                 ->filter()
                 ->values();
 
@@ -76,6 +83,10 @@ class TaxTransactionService
             $taxable = max(0, $gross - $deductTotal - $reliefTotal);
             $this->rel($tx, 'taxableIncome', $taxable, 'amount');
 
+            if (!empty($p['idempotency_key'])) {
+                $tx->update(['idempotency_key' => $p['idempotency_key']]);
+            }
+
             // 5) Tariffs per version level (country/state/local)
             $totalTax = 0;
             foreach ($versions as $v) {
@@ -93,6 +104,72 @@ class TaxTransactionService
 
             $this->rel($tx, 'totalTax', $totalTax, 'amount');
 
+            $creditsApplied = 0.0;
+            if (!empty($p['beneficiary_id'])) {
+                [$creditsApplied, $creditDetails] = $this->applyWithholdingCredits(
+                    (int)$p['beneficiary_id'],
+                    (int)$p['tax_year'],
+                    (float)$totalTax
+                );
+
+                // One relation per credit used (traceability)
+                foreach ($creditDetails as $cd) {
+                    $this->rel($tx, 'withholdingCreditApplied', $cd['used'], 'amount', $cd['credit_id'], \App\Models\WithholdingCredit::class);
+                }
+            }
+
+            // ---- Payroll contributions (employee/employer) ----
+            $mergedContribs = $this->mergeContributionRules($versions);
+
+            $employeeTotal = 0.0;
+            $employerTotal = 0.0;
+
+            foreach ($mergedContribs as $mc) {
+                /** @var ContributionRule $rule */
+                $rule = $mc['rule'];
+                [$emp, $er, $appliedBy, $base] = $this->evalContribution($rule, $incomeMap);
+
+                if ($emp > 0) {
+                    $employeeTotal += $emp;
+                    $this->rel($tx, 'employeeContribution', $emp, $appliedBy, $rule->id, ContributionRule::class);
+                }
+                if ($er > 0) {
+                    $employerTotal += $er;
+                    $this->rel($tx, 'employerContribution', $er, $appliedBy, $rule->id, ContributionRule::class);
+                }
+            }
+
+            $this->rel($tx, 'employeeContributionTotal', round($employeeTotal, 2), 'amount');
+            $this->rel($tx, 'employerContributionTotal', round($employerTotal, 2), 'amount');
+
+            // Net tax due after credits
+            $netTax = max(0, round((float)$totalTax - (float)$creditsApplied, 2));
+            $this->rel($tx, 'netTaxDue', $netTax, 'amount');
+
+            $inputs = [
+                'country_code' => $p['country_code'] ?? null,
+                'state_code'   => $p['state_code']   ?? null,
+                'local_code'   => $p['local_code']   ?? null,
+                'tax_year'     => $p['tax_year'],
+                'classes'      => $p['classes']      ?? [],
+                'deductions'   => $p['deductions']   ?? [],
+            ];
+
+            // 2) Versions snapshot (rules) and hash
+            $versionsSnapshot = RuleSnapshotBuilder::build($versions->all());
+            $rulesHash        = RuleSnapshotBuilder::hash($versionsSnapshot);
+
+            // 3) Full statement
+            $statement = StatementBuilder::from($tx->load('relations'), $inputs, $versionsSnapshot);
+
+            // 4) Persist on transaction
+            $tx->update([
+                'input_snapshot'    => $inputs,
+                'versions_snapshot' => $versionsSnapshot,
+                'rules_hash'        => $rulesHash,
+                'statement'         => $statement,
+            ]);
+
             return $tx->fresh('relations');
         });
     }
@@ -108,7 +185,10 @@ class TaxTransactionService
         $local   = (!empty($p['local_code']) && $state) ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first() : null;
 
         $versions = collect([$country, $state, $local])->filter()
-            ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)->where('tax_year', $p['tax_year'])->first())
+            ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)
+                ->where('tax_year', $p['tax_year'])
+                ->active()
+                ->first())
             ->filter()
             ->values();
 
@@ -336,5 +416,101 @@ class TaxTransactionService
         }
 
         return $total;
+    }
+
+    /**
+     * Applies available WHT credits FIFO and returns [appliedAmount, details[]].
+     * Locks rows for safe concurrent consumption.
+     */
+    private function applyWithholdingCredits(int $beneficiaryId, int $taxYear, float $liability): array
+    {
+        $remaining = $liability;
+        $applied   = 0.0;
+        $details   = [];
+
+        // Lock credits so two requests don't consume the same credit simultaneously
+        $credits = WithholdingCredit::where('beneficiary_id', $beneficiaryId)
+            ->where('tax_year', $taxYear)
+            ->where('remaining_amount', '>', 0)
+            ->orderBy('created_at')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($credits as $c) {
+            if ($remaining <= 0) break;
+
+            $use = min((float)$c->remaining_amount, $remaining);
+            if ($use <= 0) continue;
+
+            $c->remaining_amount = round((float)$c->remaining_amount - $use, 2);
+            if ($c->remaining_amount <= 0 && is_null($c->consumed_at)) {
+                $c->consumed_at = now();
+            }
+            $c->save();
+
+            $applied   += $use;
+            $remaining -= $use;
+            $details[]  = ['credit_id' => $c->id, 'used' => $use];
+        }
+
+        return [round($applied, 2), $details];
+    }
+
+    /** Merge contribution rules across versions with combine_mode semantics. */
+    private function mergeContributionRules(Collection $versions): array
+    {
+        $picked = [];
+        foreach ($versions as $v) {
+            foreach ($v->contributionRules()->get() as $r) {
+                $key = $r->name; // merge by logical name (e.g. "Pension")
+                if (!isset($picked[$key])) {
+                    $picked[$key] = ['rule' => $r];
+                } else {
+                    if ($r->combine_mode === 'override') {
+                        $picked[$key] = ['rule' => $r];
+                    } elseif ($picked[$key]['rule']->combine_mode === 'stack' && $r->combine_mode === 'stack') {
+                        // stacking: add rates & caps sensibly (keep it simple: stack rates)
+                        $picked[$key]['rule']->employee_rate = (float)$picked[$key]['rule']->employee_rate + (float)$r->employee_rate;
+                        $picked[$key]['rule']->employer_rate = (float)$picked[$key]['rule']->employer_rate + (float)$r->employer_rate;
+                    } else {
+                        $picked[$key] = ['rule' => $r];
+                    }
+                }
+            }
+        }
+        return array_values($picked);
+    }
+
+    /** Calculate employee & employer contribution for a rule. */
+    private function evalContribution(ContributionRule $r, array $incomeMap): array
+    {
+        $base = 0.0;
+        if ($r->base_type === 'gross') {
+            $base = (float) collect($incomeMap)->sum();
+        } else {
+            $shorts = $r->baseClasses()->pluck('short_name')->all();
+            $base   = (float) collect($incomeMap)->only($shorts)->sum();
+        }
+
+        $appliedBy = $r->rate_type;
+
+        // compute amounts
+        if ($r->rate_type === 'amount') {
+            $emp = (float) ($r->employee_rate ?? 0);
+            $er  = (float) ($r->employer_rate ?? 0);
+        } else { // percentage
+            $emp = (float) $base * ((float) ($r->employee_rate ?? 0) / 100);
+            $er  = (float) $base * ((float) ($r->employer_rate ?? 0) / 100);
+        }
+
+        // floors
+        if (!is_null($r->employee_floor)) $emp = max($emp, (float) $r->employee_floor);
+        if (!is_null($r->employer_floor)) $er  = max($er,  (float) $r->employer_floor);
+
+        // caps
+        if (!is_null($r->employee_cap)) $emp = min($emp, (float) $r->employee_cap);
+        if (!is_null($r->employer_cap)) $er  = min($er,  (float) $r->employer_cap);
+
+        return [round($emp, 2), round($er, 2), $appliedBy, $base];
     }
 }

@@ -59,6 +59,7 @@ class TaxTransactionCreateFormRequest extends FormRequest
             'deductions.*' => ['boolean'],
 
             'currency_code' => ['nullable', 'string', 'size:3'],
+            'beneficiary_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -86,6 +87,7 @@ class TaxTransactionCreateFormRequest extends FormRequest
             $versions = collect($candidates)
                 ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)
                     ->where('tax_year', (int)$this->input('tax_year'))
+                    ->active() // 👈 only published/frozen
                     ->first())
                 ->filter()
                 ->values();

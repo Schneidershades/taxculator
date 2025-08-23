@@ -21,7 +21,8 @@ return new class extends Migration
             $table->string('name');
             $table->string('currency_code', 3)->nullable();          // NGN, GHS, ...
             $table->timestamps();
-            $table->unique(['level', 'country_code', 'state_code', 'local_code']);
+            $table->index(['level', 'country_code', 'state_code', 'local_code'], 'i_jurs_lookup');
+            $table->index('parent_id');
         });
     }
 
