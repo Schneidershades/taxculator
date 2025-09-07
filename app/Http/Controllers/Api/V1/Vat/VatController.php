@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers\Api\V1\Vat;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Tax\VatInvoiceCreateFormRequest;
-use App\Http\Requests\Tax\VatReturnPreviewRequest;
+use App\Models\VatInvoice;
 use App\Services\Tax\VatService;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Tax\VatReturnPreviewRequest;
+use App\Http\Requests\Tax\VatInvoiceCreateFormRequest;
 
 class VatController extends Controller
 {
+    public function index()
+    {
+        // Minimal list: return invoices for the requested year/country if provided
+        $q = VatInvoice::query()->with('lines');
+        if (request()->filled('tax_year')) $q->where('tax_year', (int) request('tax_year'));
+        if (request()->filled('country_code')) $q->where('country_code', strtoupper((string) request('country_code')));
+
+        return $this->showAll($q->orderByDesc('id')->paginate(20));
+    }
     public function createInvoice(VatInvoiceCreateFormRequest $request)
     {
         try {

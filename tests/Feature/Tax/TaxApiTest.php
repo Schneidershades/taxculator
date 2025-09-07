@@ -6,6 +6,7 @@ use Database\Seeders\TaxBootstrapSeeder;
 
 uses(TestCase::class, RefreshDatabase::class);
 
+uses()->beforeEach(fn() => $this->withoutExceptionHandling());
 beforeEach(function () {
     $this->seed(TaxBootstrapSeeder::class);
 });

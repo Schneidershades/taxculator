@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Tax;
 
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TaxTransactionResource extends JsonResource
@@ -28,7 +27,6 @@ class TaxTransactionResource extends JsonResource
         $totalTax   = (float) optional($rels->firstWhere('description', 'totalTax'))->value
             ?: ($countryTax + $stateTax + $localTax);
 
-        // ✅ NEW: contributions & credits
         $employeeContrib = (float) optional($rels->firstWhere('description', 'employeeContributionTotal'))->value
             ?: (float) $rels->where('description', 'employeeContribution')->sum('value');
 
@@ -40,7 +38,7 @@ class TaxTransactionResource extends JsonResource
         $netTaxDue = (float) optional($rels->firstWhere('description', 'netTaxDue'))->value
             ?: max(0, $totalTax - $creditsApplied);
 
-        return [
+        $out = [
             'id'         => $this->id,
             'identifier' => $this->identifier,
             'user_id'    => $this->user_id,
@@ -52,8 +50,6 @@ class TaxTransactionResource extends JsonResource
                 'state_tax'         => $stateTax,
                 'local_tax'         => $localTax,
                 'total_tax'         => $totalTax,
-
-                // ✅ make tests happy
                 'employee_contrib'  => round($employeeContrib, 2),
                 'employer_contrib'  => round($employerContrib, 2),
                 'credits_applied'   => round($creditsApplied, 2),
@@ -61,18 +57,34 @@ class TaxTransactionResource extends JsonResource
             ],
 
             'breakdown' => [
-                'classes'    => TaxTransactionRelationResource::collection($classes),
-                'deductions' => TaxTransactionRelationResource::collection($deductions),
-                'reliefs'    => TaxTransactionRelationResource::collection($reliefs),
-                'tariffs'    => TaxTransactionRelationResource::collection($tariffs),
+                'classes'                 => TaxTransactionRelationResource::collection($classes),
+                'deductions'              => TaxTransactionRelationResource::collection($deductions),
+                'reliefs'                 => TaxTransactionRelationResource::collection($reliefs),
+                'tariffs'                 => TaxTransactionRelationResource::collection($tariffs),
+                'employee_contributions'  => TaxTransactionRelationResource::collection($rels->where('description', 'employeeContribution')),
+                'employer_contributions'  => TaxTransactionRelationResource::collection($rels->where('description', 'employerContribution')),
+            ],
 
-                // (optional) also expose contrib lines if you want:
-                'employee_contributions' => TaxTransactionRelationResource::collection($rels->where('description', 'employeeContribution')),
-                'employer_contributions' => TaxTransactionRelationResource::collection($rels->where('description', 'employerContribution')),
+            // NEW: what tests read — meta.currencies
+            'meta' => [
+                'currencies' => $this->statement['meta']['currencies']
+                    ?? $this->statement['currencies']
+                    ?? [
+                        'base_currency'    => 'NGN',
+                        'display_currency' => null,
+                        'fx'               => null,
+                    ],
             ],
 
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
         ];
+
+        // NEW: echo converted amounts when present
+        if (isset($this->statement['amounts_display'])) {
+            $out['amounts_display'] = $this->statement['amounts_display'];
+        }
+
+        return $out;
     }
 }

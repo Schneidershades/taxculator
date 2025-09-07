@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('local_code', 50)->nullable()->index();   // e.g., IKEJA
             $table->string('name');
             $table->string('currency_code', 3)->nullable();          // NGN, GHS, ...
+            $table->string('base_currency', 3)->default('NGN');
+            $table->index('base_currency');
             $table->timestamps();
             $table->index(['level', 'country_code', 'state_code', 'local_code'], 'i_jurs_lookup');
             $table->index('parent_id');

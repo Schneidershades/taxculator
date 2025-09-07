@@ -21,6 +21,7 @@ class TaxTransaction extends Model
         'input_snapshot'    => 'array',
         'versions_snapshot' => 'array',
         'statement'         => 'array',
+        'fx_snapshot'       => 'array',   // NEW
     ];
 
     protected $fillable = [
@@ -31,6 +32,9 @@ class TaxTransaction extends Model
         'rules_hash',
         'statement',
         'idempotency_key',
+        'display_currency', // NEW
+        'fx_snapshot',      // NEW
+        'idempotency_key',  // (already present in your DB)
     ];
 
     public function relations()

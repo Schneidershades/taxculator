@@ -18,6 +18,10 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable();
             $table->boolean('system_verification')->default(false);
+            $table->foreignId('tenant_id')->nullable()->constrained('tenants')->nullOnDelete();
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->string('role', 16)->default('owner'); // owner|member
             $table->rememberToken();
             $table->timestamps();
         });

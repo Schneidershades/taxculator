@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             StateDeductionOverrideSeeder::class,
             VatDemoSeeder::class,
             TaxBootstrapSeeder::class,
+            FxRateSeeder::class,
         ]);
     }
 }

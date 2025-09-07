@@ -60,4 +60,52 @@ class TaxTransactionController extends Controller
         // download with a friendly name
         return $pdf->download("tax-statement-{$tx->id}.pdf");
     }
+
+    public function packLinks(int $id)
+    {
+        $tx = TaxTransaction::findOrFail($id);
+        $ttl = now()->addMinutes(5);
+        $pdf = url()->temporarySignedRoute('pit.pack.pdf', $ttl, ['id' => $tx->id]);
+        $csv = url()->temporarySignedRoute('pit.pack.csv', $ttl, ['id' => $tx->id]);
+        return $this->respondSuccess(['message' => 'Export links generated.', 'data' => compact('pdf','csv')]);
+    }
+
+    public function downloadPackPdf(int $id)
+    {
+        $tx = TaxTransaction::findOrFail($id);
+        $s = $tx->statement ?? [];
+        $pdf = Pdf::loadView('tax.pit_pack', ['tx' => $tx, 's' => $s]);
+        return $pdf->download("pit_pack_{$tx->id}.pdf");
+    }
+
+    public function downloadPackCsv(int $id)
+    {
+        $tx = TaxTransaction::findOrFail($id);
+        $s = $tx->statement ?? [];
+        $rows = [
+            ['Item','Value'],
+            ['Gross income', (string)($s['amounts']['gross_income'] ?? 0)],
+            ['Taxable income', (string)($s['amounts']['taxable_income'] ?? 0)],
+            ['Country tax', (string)($s['amounts']['country_tax'] ?? 0)],
+            ['State tax', (string)($s['amounts']['state_tax'] ?? 0)],
+            ['Local tax', (string)($s['amounts']['local_tax'] ?? 0)],
+            ['Total tax', (string)($s['amounts']['total_tax'] ?? 0)],
+            ['Net tax due', (string)($s['amounts']['net_tax_due'] ?? 0)],
+        ];
+        $csv = $this->csv($rows);
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="pit_pack_'.$tx->id.'.csv"',
+        ]);
+    }
+
+    private function csv(array $rows): string
+    {
+        $out = fopen('php://temp', 'r+');
+        foreach ($rows as $row) { fputcsv($out, $row); }
+        rewind($out);
+        $csv = stream_get_contents($out);
+        fclose($out);
+        return (string) $csv;
+    }
 }

@@ -140,6 +140,13 @@ class VatService
 
         $invoices = $q->with('lines')->get();
 
+        // Registration date gating by tenant, if available
+        $tenant = \App\Support\Tenancy::current();
+        if ($tenant && $tenant->vat_registration_date) {
+            $reg = \Carbon\Carbon::parse($tenant->vat_registration_date)->toDateString();
+            $invoices = $invoices->filter(fn($inv) => $inv->issue_date >= $reg);
+        }
+
         $output = 0.0;
         $input = 0.0;
         $sources = ['sales' => [], 'purchases' => []];

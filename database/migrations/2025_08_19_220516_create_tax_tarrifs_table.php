@@ -30,6 +30,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tax_tarrifs');
+        // Correct table name is 'tax_tariffs'
+        Schema::dropIfExists('tax_tariffs');
     }
 };

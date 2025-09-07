@@ -12,6 +12,7 @@ use App\Models\ContributionRule;
 use App\Models\TaxDeductionRule;
 use App\Models\WithholdingCredit;
 use Illuminate\Support\Collection;
+use App\Services\Fx\FxService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Services\Tax\StatementBuilder;
@@ -166,7 +167,38 @@ class TaxTransactionService
             // 3) Full statement
             $statement = StatementBuilder::from($tx->load('relations'), $inputs, $versionsSnapshot);
 
-            // 4) Persist on transaction
+            $baseCurrency    = $country->base_currency ?? 'NGN';
+            $displayCurrency = isset($p['currency_code']) ? strtoupper((string) $p['currency_code']) : null;
+
+            $currencies = [
+                'base_currency'    => $baseCurrency,
+                'display_currency' => null,
+                'fx'               => null,
+            ];
+
+            if ($displayCurrency && $displayCurrency !== $baseCurrency) {
+                /** @var \App\Services\Fx\FxService $fxSvc */
+                $fxSvc = app(\App\Services\Fx\FxService::class);
+                $fx    = $fxSvc->resolve($baseCurrency, $displayCurrency, now()->toDateString());
+
+                $currencies['display_currency'] = $displayCurrency;
+                $currencies['fx']               = $fx;
+
+                $precision = (int) config('fx.precision', 2);
+
+                // Convert normalized statement amounts
+                $statement['amounts_display'] = $fxSvc->convertArray(
+                    $statement['amounts'],
+                    (float) $fx['rate'],
+                    $precision
+                );
+            }
+
+            // ✅ Put currencies inside meta (what the tests read) and also top-level for convenience
+            $statement['meta']['currencies'] = $currencies;
+            $statement['currencies']         = $currencies;
+
+            // Persist snapshots (+ statement)
             $tx->update([
                 'input_snapshot'    => $inputs,
                 'versions_snapshot' => $versionsSnapshot,
@@ -184,9 +216,14 @@ class TaxTransactionService
      */
     public function preview(array $p): array
     {
+        // ---- resolve jurisdictions & active versions ----
         $country = TaxJurisdiction::country($p['country_code'])->firstOrFail();
-        $state   = !empty($p['state_code']) ? TaxJurisdiction::state($p['country_code'], $p['state_code'])->first() : null;
-        $local   = (!empty($p['local_code']) && $state) ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first() : null;
+        $state   = !empty($p['state_code'])
+            ? TaxJurisdiction::state($p['country_code'], $p['state_code'])->first()
+            : null;
+        $local   = (!empty($p['local_code']) && $state)
+            ? TaxJurisdiction::local($p['country_code'], $p['state_code'], $p['local_code'])->first()
+            : null;
 
         $versions = collect([$country, $state, $local])->filter()
             ->map(fn($j) => TaxVersion::where('tax_jurisdiction_id', $j->id)
@@ -200,34 +237,47 @@ class TaxTransactionService
             throw new \RuntimeException('No tax versions found for the given year/jurisdiction');
         }
 
-        $classMap  = TaxClass::query()->get()->keyBy('short_name');
-        $incomeMap = collect($p['classes'])->map(fn($v) => (float)$v)->all();
+        // ---- pull cached rule bundles for each version (country/state/local) ----
+        $bundles = $versions->map(fn($v) => TaxRuleCache::pitBundle($v->id))->all();
 
+        // ---- inputs & class map ----
+        $classMap  = TaxClass::query()->get()->keyBy('short_name');
+        $incomeMap = collect($p['classes'] ?? [])->map(fn($v) => (float) $v)->all();
+
+        // ---- breakdown shells ----
         $breakdown = [
-            'classes'    => [],
-            'deductions' => [],
-            'reliefs'    => [],
-            'tariffs'    => [], // country/state/local bracket lines
+            'classes'                 => [],
+            'deductions'              => [],
+            'reliefs'                 => [],
+            'tariffs'                 => [],
+            'employee_contributions'  => [],
+            'employer_contributions'  => [],
         ];
 
-        // classes & gross
-        $gross = 0;
+        // ---- classes & gross ----
+        $gross = 0.0;
         foreach ($incomeMap as $short => $amt) {
-            if ($amt <= 0 || !isset($classMap[$short])) continue;
+            if ($amt <= 0 || !isset($classMap[$short])) {
+                continue;
+            }
             $gross += $amt;
             $breakdown['classes'][] = [
                 'description' => 'taxClass',
                 'applied_by'  => 'amount',
                 'value'       => round($amt, 2),
-                'related'     => ['type' => 'TaxClass', 'id' => $classMap[$short]->id, 'short_name' => $short],
+                'related'     => [
+                    'type'       => 'TaxClass',
+                    'id'         => $classMap[$short]->id,
+                    'short_name' => $short,
+                ],
             ];
         }
 
-        // deductions
+        // ---- deductions (merge across bundles with combine_mode) ----
         $flags = $p['deductions'] ?? [];
-        $mergedDeductions = $this->mergeDeductions($versions, $flags);
+        $mergedDeductions = $this->mergeDeductionsFromBundles($bundles, $flags);
 
-        $deductTotal = 0;
+        $deductTotal = 0.0;
         foreach ($mergedDeductions as $mr) {
             [$val, $appliedBy] = $this->evalDeduction($mr['rule'], $incomeMap);
             if ($val > 0) {
@@ -236,14 +286,19 @@ class TaxTransactionService
                     'description' => 'deduction',
                     'applied_by'  => $appliedBy,
                     'value'       => round($val, 2),
-                    'related'     => ['type' => 'TaxDeductionRule', 'id' => $mr['rule']->id, 'short_name' => $mr['rule']->deductionClass->short_name],
+                    'related'     => [
+                        'type'       => 'TaxDeductionRule',
+                        'id'         => $mr['rule']->id,
+                        'short_name' => $mr['rule']->deductionClass->short_name,
+                    ],
                 ];
             }
         }
 
-        // reliefs
-        $mergedReliefs = $this->mergeReliefs($versions);
-        $reliefTotal = 0;
+        // ---- reliefs (merge across bundles with combine_mode) ----
+        $mergedReliefs = $this->mergeReliefsFromBundles($bundles);
+        $reliefTotal   = 0.0;
+
         foreach ($mergedReliefs as $mr) {
             $val = $this->evalRelief($mr['rule'], $gross - $deductTotal);
             if ($val > 0) {
@@ -252,68 +307,138 @@ class TaxTransactionService
                     'description' => 'relief',
                     'applied_by'  => $mr['rule']->relief_type,
                     'value'       => round($val, 2),
-                    'related'     => ['type' => 'TaxReliefRule', 'id' => $mr['rule']->id, 'code' => $mr['rule']->reliefClass->code],
+                    'related'     => [
+                        'type' => 'TaxReliefRule',
+                        'id'   => $mr['rule']->id,
+                        'code' => $mr['rule']->reliefClass->code,
+                    ],
                 ];
             }
         }
 
+        // ---- taxable income ----
         $taxable = max(0, $gross - $deductTotal - $reliefTotal);
 
-        // tariffs per level
-        $countryTax = $stateTax = $localTax = 0.0;
-        foreach ($versions as $v) {
-            $component = 0.0;
-            $remainingBase = $taxable;
+        // ---- tariffs per bundle (country/state/local) ----
+        $countryTax = 0.0;
+        $stateTax   = 0.0;
+        $localTax   = 0.0;
 
-            foreach ($v->tariffs()->orderBy('ordering')->get() as $b) {
-                if ($remainingBase <= 0) break;
-                $min = (float)$b->bracket_min;
-                $max = is_null($b->bracket_max) ? INF : (float)$b->bracket_max;
-                $span = max(0, min($remainingBase, $max - $min));
+        foreach ($bundles as $b) {
+            $remaining = $taxable;
+            $component = 0.0;
+
+            foreach ($b['tariffs'] as $t) {
+                if ($remaining <= 0) break;
+
+                $min  = (float) $t['min'];
+                $max  = is_null($t['max']) ? INF : (float) $t['max'];
+                $span = max(0, min($remaining, $max - $min));
                 if ($span <= 0) continue;
 
-                $chunk = $b->rate_type === 'percentage'
-                    ? round($span * ((float)$b->rate_value / 100), 2)
-                    : round((float)$b->rate_value, 2);
+                $chunk = $t['rate_type'] === 'percentage'
+                    ? round($span * ((float) $t['rate_value'] / 100), 2)
+                    : round((float) $t['rate_value'], 2);
 
                 $component += $chunk;
                 $breakdown['tariffs'][] = [
                     'description' => 'taxedIncomeByTariff',
-                    'applied_by'  => $b->rate_type,
+                    'applied_by'  => $t['rate_type'],
                     'value'       => $chunk,
                     'related'     => [
-                        'type' => 'TaxTariff',
-                        'id' => $b->id,
-                        'level' => $v->jurisdiction->level,
-                        'min' => (float)$b->bracket_min,
-                        'max' => $b->bracket_max,
-                        'rate' => (float)$b->rate_value,
+                        'type'  => 'TaxTariff',
+                        'id'    => $t['id'] ?? null,
+                        'level' => $b['level'],   // country|state|local
+                        'min'   => (float) $t['min'],
+                        'max'   => $t['max'],
+                        'rate'  => (float) $t['rate_value'],
                     ],
                 ];
 
-                $remainingBase -= $span;
+                $remaining -= $span;
             }
 
-            $level = $v->jurisdiction->level;
-            if ($level === 'country') $countryTax += $component;
-            if ($level === 'state')   $stateTax   += $component;
-            if ($level === 'local')   $localTax   += $component;
+            if ($b['level'] === 'country') $countryTax += $component;
+            if ($b['level'] === 'state')   $stateTax   += $component;
+            if ($b['level'] === 'local')   $localTax   += $component;
         }
 
+        // ---- optional: contributions (read-only in preview) ----
+        $employeeTotal = 0.0;
+        $employerTotal = 0.0;
+
+        $mergedContribs = $this->mergeContributionsFromBundles($bundles);
+        foreach ($mergedContribs as $rc) {
+            [$emp, $er, $appliedBy, $base, $name] = $this->evalContributionFromBundle($rc, $incomeMap);
+            if ($emp > 0) {
+                $employeeTotal += $emp;
+                $breakdown['employee_contributions'][] = [
+                    'description' => 'employeeContribution',
+                    'applied_by'  => $appliedBy,
+                    'value'       => $emp,
+                    'related'     => ['name' => $name, 'base' => $base],
+                ];
+            }
+            if ($er > 0) {
+                $employerTotal += $er;
+                $breakdown['employer_contributions'][] = [
+                    'description' => 'employerContribution',
+                    'applied_by'  => $appliedBy,
+                    'value'       => $er,
+                    'related'     => ['name' => $name, 'base' => $base],
+                ];
+            }
+        }
+
+        // ---- base amounts (jurisdiction currency) ----
         $amounts = [
-            'gross_income'   => round($gross, 2),
-            'taxable_income' => round($taxable, 2),
-            'country_tax'    => round($countryTax, 2),
-            'state_tax'      => round($stateTax, 2),
-            'local_tax'      => round($localTax, 2),
-            'total_tax'      => round($countryTax + $stateTax + $localTax, 2),
+            'gross_income'      => round($gross, 2),
+            'taxable_income'    => round($taxable, 2),
+            'country_tax'       => round($countryTax, 2),
+            'state_tax'         => round($stateTax, 2),
+            'local_tax'         => round($localTax, 2),
+            'total_tax'         => round($countryTax + $stateTax + $localTax, 2),
+            'employee_contrib'  => round($employeeTotal, 2),
+            'employer_contrib'  => round($employerTotal, 2),
         ];
 
-        return [
-            'amounts'   => $amounts,
-            'breakdown' => $breakdown,
+        // ---- FX presentation (optional): amounts_display + currencies ----
+        $baseCurrency    = $country->base_currency ?? 'NGN';
+        $displayCurrency = !empty($p['currency_code']) ? strtoupper($p['currency_code']) : null;
+
+        // default currencies block if no FX requested
+        $result = [
+            'amounts'    => $amounts,
+            'breakdown'  => $breakdown,
+            'currencies' => [
+                'base_currency'    => $baseCurrency,
+                'display_currency' => null,
+                'fx'               => null,
+            ],
         ];
+
+        if ($displayCurrency && $displayCurrency !== $baseCurrency) {
+            /** @var FxService $fxSvc */
+            $fxSvc = app(FxService::class);
+
+            // resolve pair & rate (e.g., NGN/USD)
+            $fx = $fxSvc->resolve($baseCurrency, $displayCurrency, now()->toDateString());
+
+            // convert amounts to display currency
+            $precision      = (int) config('fx.precision', 2);
+            $amountsDisplay = $fxSvc->convertArray($amounts, (float) $fx['rate'], $precision);
+
+            $result['amounts_display'] = $amountsDisplay;
+            $result['currencies'] = [
+                'base_currency'    => $baseCurrency,
+                'display_currency' => $displayCurrency,
+                'fx'               => $fx, // ['pair' => 'NGN/USD', 'rate' => 0.0012, 'as_of' => 'YYYY-MM-DD', ...]
+            ];
+        }
+
+        return $result;
     }
+
 
     // ---------- internals ----------
 
@@ -376,25 +501,41 @@ class TaxTransactionService
         return array_values($picked);
     }
 
-    private function evalDeduction(TaxDeductionRule $r, array $incomeMap): array
+    private function evalDeduction($r, array $incomeMap): array
     {
-        if ($r->deduction_type === 'amount') {
-            return [round((float)$r->value, 2), 'amount'];
+        // type / value
+        $type  = $r->deduction_type ?? $r->type ?? 'percentage';
+        $value = (float) ($r->value ?? 0);
+
+        if ($type === 'amount') {
+            return [round($value, 2), 'amount'];
         }
-        $baseShorts = $r->baseClasses()->pluck('short_name')->all();
-        $base = collect($incomeMap)->only($baseShorts)->sum();
-        return [round($base * ((float)$r->value / 100), 2), 'percentage'];
+
+        // base shorts (Eloquent relation OR bundle collection/array)
+        if (method_exists($r, 'baseClasses')) {
+            $baseShorts = $r->baseClasses()->pluck('short_name')->all();
+        } elseif (isset($r->baseClasses) && $r->baseClasses instanceof Collection) {
+            $baseShorts = $r->baseClasses->all();
+        } elseif (isset($r->base_shorts) && is_array($r->base_shorts)) {
+            $baseShorts = $r->base_shorts;
+        } else {
+            $baseShorts = [];
+        }
+
+        $base = (float) collect($incomeMap)->only($baseShorts)->sum();
+
+        return [round($base * ($value / 100), 2), 'percentage'];
     }
 
-    private function evalRelief(TaxReliefRule $r, float $base): float
+    private function evalRelief($r, float $base): float
     {
-        $withinMin = $r->minimum_status === 'unlimited' || $base >= (float)$r->minimum_amount;
-        $withinMax = $r->maximum_status === 'unlimited' || $base <= (float)$r->maximum_amount;
+        $withinMin = $r->minimum_status === 'unlimited' || $base >= (float) $r->minimum_amount;
+        $withinMax = $r->maximum_status === 'unlimited' || $base <= (float) $r->maximum_amount;
         if (!($withinMin && $withinMax)) return 0.0;
 
         return $r->relief_type === 'percentage'
-            ? round($base * ((float)$r->value / 100), 2)
-            : round((float)$r->value, 2);
+            ? round($base * ((float) $r->value / 100), 2)
+            : round((float) $r->value, 2);
     }
 
     private function applyTariffs($tariffs, float $taxable, TaxTransaction $tx): float
